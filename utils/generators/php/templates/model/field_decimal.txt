@@ -1,0 +1,26 @@
+
+
+	//
+	// %FIELD%
+	//
+	public $%FIELD% = null;
+	
+	public function get%HFIELD%()
+	{
+		return $this->%FIELD%;
+	}
+	
+	public function set%HFIELD%($val)
+	{
+		if(%ALLOWS_EMPTY% && empty($val))
+			throw new \Exception('Invalid argument value for %FIELD%, value cannot be empty');
+		if(!is_num($val) && !is_float($val))
+			throw new \Exception('Invalid argument value for %FIELD%, value must integer or floating point');
+		list($M, $D) = explode('.', (string) $val);
+		if(strlen($M) > %M%)
+			throw new \Exception('Invalid argument value for %FIELD%, decimal part before the dot cannot exceed %M% digits');
+		if(strlen($D) > %D%)
+			throw new \Exception('Invalid argument value for %FIELD%, decimal part after the dot cannot exceed %D% digits');
+		$this->%FIELD% = $val;
+		return $this;
+	}

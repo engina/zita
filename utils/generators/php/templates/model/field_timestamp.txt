@@ -1,0 +1,19 @@
+
+
+	//
+	// %FIELD%
+	//
+	public $%FIELD% = null;
+	
+	public function get%HFIELD%()
+	{
+		return $this->%FIELD%;
+	}
+	
+	public function set%HFIELD%($val)
+	{
+		if(%ALLOWS_EMPTY% && empty($val))
+			throw new \Exception('Invalid argument value for %FIELD%, value cannot be empty');
+		$this->%FIELD% = $val;
+		return $this;
+	}

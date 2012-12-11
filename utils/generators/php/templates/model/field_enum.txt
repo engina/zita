@@ -1,0 +1,22 @@
+
+
+	//
+	// %FIELD%
+	//
+	public $%FIELD% = null;
+	
+	public function get%HFIELD%()
+	{
+		return $this->%FIELD%;
+	}
+	
+	public function set%HFIELD%($str)
+	{
+		if(%ALLOWS_EMPTY% && empty($str))
+			throw new \Exception('Invalid argument value for %FIELD%, value cannot be empty');
+		$valid_values = <?=str_replace(array(" ", "\n"), '', var_export(T('ENUM_VALUES'), true))?>;
+		if(!in_array($str, $valid_values))
+			throw new \Exception("Invalid argument value for %FIELD%, valid values are <?=str($_T['ENUM_VALUES'])?>");
+		$this->%FIELD% = $str;
+		return $this;
+	}

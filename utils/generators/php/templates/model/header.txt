@@ -1,0 +1,80 @@
+namespace %NS%;
+
+// %CLASS% Model
+//
+// Generated on %DATE%
+
+class %CLASS% extends \Zita\Model
+{
+	private $m_PK     = '%PK%';
+	private $m_fields = <?=str_replace(array(" ", "\n"), '', var_export($_T['FIELDS'],true))?>;
+	private $m_tbl    = '%TBL%';
+	private $m_insert = null;
+	private $m_update = null;
+	private $m_select = null;
+	private $m_pdo    = null;
+	
+	public function __construct($pdo)
+	{
+		$this->m_pdo = $pdo;
+		$this->m_insert = $pdo->prepare("INSERT INTO `$this->m_tbl` ".
+		"<?php	
+		$sql = '(';
+		foreach($_T['FIELDS'] as $f)
+		{
+			if($f == $_T['PK']) continue;
+			$sql .= $f.', ';
+		}
+		$sql = substr($sql, 0, -2).") VALUES (\".\n\t\t\"";
+		foreach($_T['FIELDS'] as $f)
+		{
+			if($f == $_T['PK']) continue;
+			$sql .= ':'.$f.', ';
+		}
+		$sql = substr($sql, 0, -2).")\");\n";
+		echo $sql;
+		?>
+		
+		$this->m_update = $pdo->prepare("UPDATE `$this->m_tbl` SET ".
+<?php
+		$sql = '';
+		foreach($_T['FIELDS'] as $f)
+		{
+			if($f == $_T['PK']) continue;
+			$sql .= "\t\t\t\"`$f` = :$f, \".\n";
+		}
+		$sql = substr($sql, 0, -5).' WHERE `'.$_T['PK'].'` = :'.$_T['PK']."\");\n";
+		echo $sql;
+		?>
+	}
+	
+	public function save()
+	{
+		$pkMethod = 'get'.ucfirst($this->m_PK);
+		$pk = $this->$pkMethod();
+		if($pk == null)
+			return $this->insert();
+		else
+			return $this->update();
+	}
+	
+	protected function insert()
+	{
+		foreach($this->m_fields as $f)
+		{
+			if($f == '%PK%') continue;
+			$method = 'get'.ucfirst($f);
+			$this->m_insert->bindParam(':'.$f, $this->$method());
+		}
+		return $this->m_insert->execute();
+	}
+	
+	protected function update()
+	{
+		foreach($this->m_fields as $f)
+		{
+			$method = 'get'.ucfirst($f);
+			$this->m_insert->bindParam(':'.$f, $this->$method());
+		}
+		return $this->m_insert->execute();
+	}

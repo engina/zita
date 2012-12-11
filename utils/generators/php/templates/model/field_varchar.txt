@@ -1,0 +1,29 @@
+
+
+	//
+	// %FIELD%
+	//
+	public $%FIELD% = null;
+	
+	public function get%HFIELD%()
+	{
+		return $this->%FIELD%;
+	}
+	
+	public function set%HFIELD%($str)
+	{
+		if(%ALLOWS_EMPTY% && empty($str))
+			throw new \Exception('Invalid argument value for %FIELD%, value cannot be empty');
+		if(strlen($str) > %MAX%)
+			throw new \Exception('Invalid argument value for %FIELD%, value cannot be longer than %MAX% characters');
+		$this->%FIELD% = $str;
+		return $this;
+	}
+	
+	public static function getBy%HFIELD%($str)
+	{
+	}
+	
+	public static function getByLike%HFIELD%($str)
+	{
+	}
