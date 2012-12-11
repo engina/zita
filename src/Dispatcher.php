@@ -1,36 +1,65 @@
 <?php
 namespace Zita;
 
+
 require_once('Core.php');
 require_once('Request.php');
 require_once('Response.php');
 require_once('Controller.php');
 require_once('Reflector.php');
+require_once('Event.php');
 
 class Dispatcher
 {
-	private static $appNs = '';
-	private static $controllersDir = 'Controllers';
+	private $appNs = '';
+	private $controllersDir = 'Controllers';
 	
-	public static function init($appNs = '', $controllersDir = 'Controllers')
+	public $before;
+	
+	/**
+	 * Draft. Events are being fired at the moment -- maybe never will.
+	 * @code
+	 * funciton json_encoder(Request $req, Response $resp)
+	 * {
+	 *     $resp->body = json_encode($resp->body);
+	 *     $callback = $req->param('callback');
+	 *     $resp->headers['Content-type'] = 'application/json';
+	 *     if($callback != null)
+	 *     {
+	 *         $resp->body = $callback.'('.$resp->body.');';
+	 *     $resp->headers['Content-type'] = 'application/script';
+	 *     }
+	 * }
+	 * $dispatcher->after->add('json_encoder');
+	 */
+	public $after;
+	
+	/**
+	 * 
+	 * @param $appNs namespace of your application, will be prepended to Controller class names. Normally you'd just use __NAMESPACE__
+	 * @param $controllersDir directory of controllers
+	 */
+	public function __construct($appNs = '', $controllersDir = 'Controllers')
 	{
-		self::$appNs = $appNs;
-		self::$controllersDir = $controllersDir;
+		$this->appNs = $appNs;
+		$this->controllersDir = $controllersDir;
+		$this->before = new Event();
+		$this->after  = new Event();
 	}
 	
 	/**
 	 * Discovers the available controllers to build API definition.
 	 * @return \Zita\Response
 	 */
-	public static function discover()
+	public function discover()
 	{
 		$before = get_declared_classes();
-		$files = scandir(self::$controllersDir);
+		$files = scandir($this->controllersDir);
 		foreach($files as $file)
 		{
 			if(strtolower(substr($file, -4)) != '.php')
 				continue;
-			include self::$controllersDir.DIRECTORY_SEPARATOR.$file;
+			include $this->controllersDir.DIRECTORY_SEPARATOR.$file;
 		}
 		$after = get_declared_classes();
 		$classes = array_diff($after, $before);
@@ -72,19 +101,20 @@ class Dispatcher
 		return new Response($result);
 	}
 	
-	public static function dispatch()
+	public function dispatch(Request $req = null)
 	{
 		$RESPONSE = array();
 		try
 		{
-			$req = new Request();
+			if($req === null)
+				$req = new Request();
 			
 			if($req->method == 'OPTIONS')
 				goto respond;
 			
 			if(strtolower($req->server->QUERY_STRING) == 'discover')
 			{
-				$RESPONSE = self::discover();
+				$RESPONSE = $this->discover();
 				goto respond;
 			}
 			
@@ -96,17 +126,20 @@ class Dispatcher
 				
 			if(!ctype_alnum($c))
 				throw new Exception('Invalid controller name', 0);
-				
-			$c = self::$controllersDir.DIRECTORY_SEPARATOR.Core::normalize($c);
 			
 			if($m === null || empty($m))
 				$m = 'index';
 			$m = strtolower($m);
 			
-			// Load the controller - may throw exception.
-			Core::load($c);
-
-			$c = self::$appNs.'\\'.$c;
+			// Class might be loaded in case the user is defined it in file -- for testing purposes maybe.
+			// So, try to load the file if the class does not exist.
+			if(!class_exists($this->appNs.'\\'.$c, false))
+			{
+				$c = $this->controllersDir.DIRECTORY_SEPARATOR.Core::normalize($c);
+				Core::load($c);
+			}
+			
+			$c = $this->appNs.'\\'.$c;
 			
 			// Class loaded fine, inspect it.
 			
@@ -134,12 +167,22 @@ class Dispatcher
 			
 			// annotations
 			$a = Reflector::getMergedMethodAnnotation($c, $m);
-
 			$ctrl = new $c($req);
 			$RESPONSE = $method->invokeArgs($ctrl, $paramList);
 
+			// Allow simple methods to just return text
 			if(!($RESPONSE instanceof \Zita\Response))
 				$RESPONSE = new Response($RESPONSE);
+			
+			if(isset($a['Encode']))
+			{
+				$encoder = ZITA_ROOT.DS.'Encoders'.DS.Core::normalize($a['Encode']);
+				error_log('Loading encoder '.$encoder);
+				Core::load($encoder);
+				$encoder = 'Zita\Encoders\\'.Core::normalize($a['Encode']);
+				$encoder = new $encoder($req, $RESPONSE);
+				$encoder->encode();
+			}
 		}
 		catch(\Exception $e)
 		{
@@ -163,6 +206,7 @@ class Dispatcher
 			$RESPONSE->body = var_export($RESPONSE->body);
 		
 		echo $RESPONSE->body;
+		return $RESPONSE;
 	}
 }
 

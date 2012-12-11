@@ -4,6 +4,9 @@ namespace Zita;
 require('Debug.php');
 require('Exception.php');
 
+define('ZITA_ROOT', dirname(__FILE__));
+define('DS', DIRECTORY_SEPARATOR);
+
 class Core
 {
 	public static function p($k)
@@ -18,7 +21,7 @@ class Core
 
 		if(!is_readable($file))
 		{
-			throw new Exception('Source file could not be loaded', 0);
+			throw new Exception("Class '$class' could not be loaded.", 0);
 		}
 		
 		include($file);
