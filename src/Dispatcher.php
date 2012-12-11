@@ -9,8 +9,8 @@ require_once('Reflector.php');
 
 class Dispatcher
 {
-	private static $appNs;
-	private static $controllersDir;
+	private static $appNs = '';
+	private static $controllersDir = 'Controllers';
 	
 	public static function init($appNs = '', $controllersDir = 'Controllers')
 	{
@@ -57,7 +57,10 @@ class Dispatcher
 						$param_info['default'] = $parameter->getDefaultValue();
 						$param_info['optional'] = true;
 					}
-					$param_info['type'] = $parameter->getClass();
+					$type = $parameter->getClass();
+					if($type == null)
+						$type = 'String'; 
+					$param_info['type'] = $type;
 					$parameters[$parameter->getName()] = $param_info;
 				}
 				$m[$method->getName()] = array('parameters' => $parameters);
@@ -155,7 +158,11 @@ class Dispatcher
 		header('Access-Control-Allow-Headers: origin, x-requested-with, content-type');
 		foreach($RESPONSE->headers as $key => $value)
 			header($key.': '.$value);
-		echo json_encode($RESPONSE->body);
+		
+		if(!is_string($RESPONSE->body))
+			$RESPONSE->body = var_export($RESPONSE->body);
+		
+		echo $RESPONSE->body;
 	}
 }
 

@@ -1,8 +1,14 @@
 <?php
 
+// This means, we do not allow even NOTICEs. Code must be perfect to pass.
+// Any flaw in the code will result in a redirect to 500.php and will be logged.
 error_reporting(E_ALL | E_STRICT);
+
+if(!defined('ZITA_LOG'))
+	define('ZITA_LOG', 'zita.log');
+
 ini_set('display_errors', 'off');
-ini_set('error_log', E_LOG);
+ini_set('error_log', ZITA_LOG);
 ini_set('error_append_string', "\n");
 
 $ERR_500 = false;
@@ -15,7 +21,7 @@ function errorHandler($errno , $errstr, $errfile, $errline, $errcontext)
 	$str = $errstr.' ['. $errno . '] in ' . $errfile . ' on line ' . $errline .
 			   "\n Context: $ctx_id (check context.log for details)\n";
 	
-	$ctx = '================ CTX ID '.$ctx_id.' ('.date('r').') ================';
+	$ctx = '================ CTX ID '.$ctx_id.' ('.date('r').") ================\n";
 	foreach($errcontext as $key => $val)
 	{
 		$ctx .= '    '.$key.' = ';
@@ -25,8 +31,8 @@ function errorHandler($errno , $errstr, $errfile, $errline, $errcontext)
 			$ctx .= var_export($val, true);
 		$ctx .= "\n";
 	}
-	$ctx .= '################ CTX ID '.$ctx_id.' ('.date('r').') ################';
-	file_put_contents(E_LOG . '.context', $ctx, FILE_APPEND);
+	$ctx .= '################ CTX ID '.$ctx_id.' ('.date('r').") ################\n";
+	file_put_contents(ZITA_LOG . '.context', $ctx, FILE_APPEND);
 	$str .= "\n Backtrace: \n";
 	$bt = debug_backtrace();
 	array_shift($bt); // errorHandler call itself
@@ -68,7 +74,7 @@ function errorHandler($errno , $errstr, $errfile, $errline, $errcontext)
 					$str .= $t.', ';
 				}
 			}
-			$str = substr($str, 0, strlen($str)-2);
+			$str = substr($str, 0, -1);
 			$str .= ')';
 		}	
 		$str .= "\n";
@@ -78,11 +84,14 @@ function errorHandler($errno , $errstr, $errfile, $errline, $errcontext)
 }
 
 set_error_handler('errorHandler');
-// let PHP handle these, as they are error_loged automatically, it is already good.
 
-// This means, we do not allow even NOTICEs. Code must be perfect to pass.
-// Any flaw in the code will result in a redirect to 500.php and will be logged.
+// We do not set an exception handler as errorHandler catches uncaught exceptions and 
+// they are error_loged automatically, it is already good.
 
+/**
+ * Utulity function to dump an object to error log
+ * @param $mixed
+ */
 function dump($mixed)
 {
 	error_log(var_export($mixed, true));
