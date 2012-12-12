@@ -5,7 +5,7 @@ abstract class Filter
 {
 	private $config;
 	
-	public function __construct(ArrayWrapper $config = null)
+	public function __construct($config = null)
 	{
 		$this->config = $config;
 	}

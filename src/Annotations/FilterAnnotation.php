@@ -9,6 +9,12 @@ use Zita\Response;
 use Zita\Controller;
 use Zita\Core;
 
+/**
+ * This class handles @Filter annotations.
+ * Basically @Filter annotation expects a comma separated list of class names
+ * which are derived from Filter class.
+ *
+ */
 class FilterAnnotation implements IAnnotation
 {
 	private $cfg;
