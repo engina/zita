@@ -1,16 +1,19 @@
 <?php
 namespace Zita;
 
-class Event
+require_once('Filter.php');
+
+class Filters
 {
 	private $callbacks = array();
 	
-	public function add(callable $c)
+	public function add(Filter $c)
 	{
 		$this->callbacks[] = $c;
+		return $c;
 	}
 	
-	public function remove(callable $c)
+	public function remove(Filter $c)
 	{
 		$key = array_search($c, $this->callbacks);
 		if($key === false)
@@ -18,11 +21,12 @@ class Event
 		unset($this->callbacks[$key]);
 	}
 	
-	public function fire($obj)
+	public function process(Request $req, Response $resp)
 	{
 		foreach($this->callbacks as $callback)
 		{
-			if(call_user_func($callback, $obj) === false) break;
+			if($callback->preProcess($req) === false) break;
+			if($callback->postProcess($req, $resp) === false) break;
 		}
 	}
 }

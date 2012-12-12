@@ -1,4 +1,5 @@
 <?php
+namespace Zita;
 
 class FacebookAuthentication implements IAuthentication
 {

@@ -11,7 +11,7 @@ class Response
 	public $body;
 	public $headers;
 	
-	public function __construct($body, $status = 200, $headers = array())
+	public function __construct($body = '', $status = 200, $headers = array())
 	{
 		$this->body = $body;
 		$this->status = $status;

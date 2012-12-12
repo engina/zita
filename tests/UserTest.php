@@ -1,3 +1,5 @@
+<?php
+
 set_include_path(get_include_path() . PATH_SEPARATOR . 'C:\\Users\\Engin\\Code\\PHP\\WMI\\api\\0.1\\');
 require_once "PHPUnit/Extensions/Database/TestCase.php";
 

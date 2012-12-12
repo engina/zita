@@ -1,24 +1,44 @@
 <?php
 namespace Zita;
 
-
 require_once('Core.php');
 require_once('Request.php');
 require_once('Response.php');
 require_once('Controller.php');
 require_once('Reflector.php');
-require_once('Event.php');
+require_once('IAnnotation.php');
+require_once('Filters.php');
 
+/**
+ * Dispatcher class is responsible for orchestrating the workflow.
+ * 
+ * It creates a Request object. Calls the _before_ handlers before calling the
+ * controllers then calls the _after_ handlers before flushing the Response.
+ */
 class Dispatcher
 {
 	private $appNs = '';
 	private $controllersDir = 'Controllers';
-	
-	public $before;
+
+
+	/**
+	 * Before event handlers receive parameter Request.
+	 * If an event handler returns false, subsequent handlers won't be called.
+	 * <code>
+	 * funciton json_decoder(Request $req, Response $resp)
+	 * {
+	 *     if($resp->headers['Content-type'] != 'application/json') return;
+	 *     $resp->params = json_decode($resp->body);
+	 * }
+	 * $dispatcher->before->add('json_decoder');
+	 * </code>
+	 */
+	public $inputFilters;
 	
 	/**
-	 * Draft. Events are being fired at the moment -- maybe never will.
-	 * @code
+	 * After event handlers receive parameters Request and Response.
+	 * If an event handler returns false, subsequent handlers won't be called.
+	 * <code>
 	 * funciton json_encoder(Request $req, Response $resp)
 	 * {
 	 *     $resp->body = json_encode($resp->body);
@@ -30,21 +50,46 @@ class Dispatcher
 	 *     $resp->headers['Content-type'] = 'application/script';
 	 *     }
 	 * }
+	 * </code>
 	 * $dispatcher->after->add('json_encoder');
 	 */
-	public $after;
+	public $outputFilters;
 	
 	/**
+	 * Initiliazes and configures dispatchers.
 	 * 
-	 * @param $appNs namespace of your application, will be prepended to Controller class names. Normally you'd just use __NAMESPACE__
+	 * __api.php__
+	 * <code>
+	 * namespace MyApp;
+	 * 
+	 * require_once('zita/src/Dispatcher.php');
+	 * 
+	 * $d = new Zita\Dispatcher(__NAMESPACE__);
+	 * $d->dispatch();
+	 * </code>
+	 * 
+	 * __Controllers\Test.php__
+	 * <code>
+	 * namespace MyApp\Controllers;
+	 * 
+	 * class Test extends Zita\Controllers
+	 * {
+	 *     public function hello($name)
+	 *     {
+	 *         return new Response("Hello $name");
+	 *     }
+	 * }
+	 * </code>
+	 * @param $appNs namespace of your application, will be prepended to Controller class names. Normally you'd just use \_\_NAMESPACE\_\_
 	 * @param $controllersDir directory of controllers
 	 */
 	public function __construct($appNs = '', $controllersDir = 'Controllers')
 	{
 		$this->appNs = $appNs;
 		$this->controllersDir = $controllersDir;
-		$this->before = new Event();
-		$this->after  = new Event();
+		Core::$INCLUDES[] = APP_ROOT.DS.$controllersDir;
+		$this->inputFilters  = new Filters();
+		$this->outputFilters = new Filters();
 	}
 	
 	/**
@@ -101,6 +146,12 @@ class Dispatcher
 		return new Response($result);
 	}
 	
+	/**
+	 * 
+	 * @param Request $req You can craft your own Request and feed the dispatcher with it. Handy for testing your API.
+	 * @throws \Zita\Exception
+	 * @return \Zita\Response
+	 */
 	public function dispatch(Request $req = null)
 	{
 		$RESPONSE = array();
@@ -108,6 +159,8 @@ class Dispatcher
 		{
 			if($req === null)
 				$req = new Request();
+			
+			$this->inputFilters->process($req, new Response());
 			
 			if($req->method == 'OPTIONS')
 				goto respond;
@@ -131,30 +184,42 @@ class Dispatcher
 				$m = 'index';
 			$m = strtolower($m);
 			
-			// Class might be loaded in case the user is defined it in file -- for testing purposes maybe.
-			// So, try to load the file if the class does not exist.
-			if(!class_exists($this->appNs.'\\'.$c, false))
-			{
-				$c = $this->controllersDir.DIRECTORY_SEPARATOR.Core::normalize($c);
-				Core::load($c);
-			}
+			$classPath = Core::load(Core::normalize($c));
 			
-			$c = $this->appNs.'\\'.$c;
+			if($classPath === false)
+				throw new Exception("Controller '$c' not found");
+			
+			$c = $classPath;
 			
 			// Class loaded fine, inspect it.
-			
 			$ctrl = new \ReflectionClass($c);
 			
 			if(!$ctrl->isSubclassOf('Zita\Controller'))
-				throw new \Exception('Invalid controller implementation');
+				throw new Exception('Invalid controller implementation');
 
 			if(!$ctrl->hasMethod($m))
-				throw new \Exception('Method not found', 2);
+				throw new Exception('Method not found', 2);
 				
 			$method = $ctrl->getMethod($m);
 			if(!$method->isPublic())
-				throw new \Exception('Method not accessible', 3);
-
+				throw new Exception('Method not accessible', 3);
+			
+			// annotations
+			$annotations = Reflector::getMergedMethodAnnotation($c, $m);
+			
+			$ctrl = new $c($req);
+			
+			foreach($annotations as $annotation => $params)
+			{
+				$annotation .= 'Annotation';
+				$annotationClass = Core::load($annotation);
+				if($annotationClass === false)
+					throw new Exception("Unknown annotation '$annotation'");
+				$annotation = new $annotationClass($params);
+				if(!($annotation instanceof IAnnotation))
+					throw new Exception("Annotation class does not implement IAnnotation interface");
+				$annotation->preProcess($req, new Response(), $ctrl, $m);
+			}
 			
 			$paramList = array();
 			$params = $method->getParameters();
@@ -165,24 +230,21 @@ class Dispatcher
 				array_push($paramList, $req->params->__get($param->name));
 			}
 			
-			// annotations
-			$a = Reflector::getMergedMethodAnnotation($c, $m);
-			$ctrl = new $c($req);
 			$RESPONSE = $method->invokeArgs($ctrl, $paramList);
-
+			
+			foreach($annotations as $annotation => $params)
+			{
+				$annotation .= 'Annotation';
+				$annotationClass = Core::load($annotation);
+				$annotation = new $annotationClass($params);
+				$annotation->postProcess($req, $RESPONSE, $ctrl, $m);
+			}
+			
+			$this->outputFilters->process($req, $RESPONSE);
+			
 			// Allow simple methods to just return text
 			if(!($RESPONSE instanceof \Zita\Response))
 				$RESPONSE = new Response($RESPONSE);
-			
-			if(isset($a['Encode']))
-			{
-				$encoder = ZITA_ROOT.DS.'Encoders'.DS.Core::normalize($a['Encode']);
-				error_log('Loading encoder '.$encoder);
-				Core::load($encoder);
-				$encoder = 'Zita\Encoders\\'.Core::normalize($a['Encode']);
-				$encoder = new $encoder($req, $RESPONSE);
-				$encoder->encode();
-			}
 		}
 		catch(\Exception $e)
 		{
@@ -191,15 +253,24 @@ class Dispatcher
 		}
 
 		respond:
+
 		header('HTTP/1.1 '.$RESPONSE->status);
-		header('Expires: Mon, 20 Dec 1998 01:00:00 GMT');
-		header('Last-Modified: '.gmdate('D, d M Y H:i:s').' GMT');
-		header('Cache-Control: no-cache, must-revalidate');
-		header('Pragma: no-cache');
-		header('Content-type: application/json');
-		header('Access-Control-Allow-Origin: *');
-		header('Access-Control-Allow-Headers: origin, x-requested-with, content-type');
-		foreach($RESPONSE->headers as $key => $value)
+		
+		// Default headers
+		$headers = array(
+			'Expires'       => 'Mon, 20 Dec 1998 01:00:00 GMT',
+			'Last-Modified' => gmdate('D, d M Y H:i:s').' GMT',
+			'Cache-Control' => 'no-cache, must-revalidate',
+		    'Pragma'        => 'no-cache',
+		    'Content-type'  => 'application/json',
+		    'Access-Control-Allow-Origin' => '*',
+		    'Access-Control-Allow-Headers' => 'origin, x-requested-with, content-type'
+		);
+		
+		// Let controller defined headers override defaults
+		$headers = array_merge($headers, $RESPONSE->headers);
+		
+		foreach($headers as $key => $value)
 			header($key.': '.$value);
 		
 		if(!is_string($RESPONSE->body))

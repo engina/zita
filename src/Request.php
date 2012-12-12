@@ -18,8 +18,24 @@ class Request
 		$this->session = new ArrayWrapper(isset($_SESSION) ? $_SESSION : array());
 		$this->server  = new ArrayWrapper($_SERVER);
 		$this->method  = $this->server->REQUEST_METHOD;
+
+		$headers = array();
+		foreach($_SERVER as $key => $value)
+		{
+			if (substr($key, 0, 5) != 'HTTP_') continue;
+			$header = str_replace(' ', '-', ucwords(str_replace('_', ' ', strtolower(substr($key, 5)))));
+			$headers[$header] = $value;			
+		}
+		$this->headers = new ArrayWrapper($headers);
 	}
 	
+	/**
+	 * Get parameters as an object
+	 * <code>
+	 * if($request->get->age < 18)
+	 *     throw new Exception();
+	 * </code>
+	 */
 	public $get;
 	public $post;
 	public $cookie;
@@ -27,6 +43,7 @@ class Request
 	public $params;
 	public $server;
 	public $method;
+	public $headers;
 }
 
 ?>

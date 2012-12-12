@@ -7,7 +7,7 @@ error_reporting(E_ALL | E_STRICT);
 if(!defined('ZITA_LOG'))
 	define('ZITA_LOG', 'zita.log');
 
-ini_set('display_errors', 'off');
+//ini_set('display_errors', 'off');
 ini_set('error_log', ZITA_LOG);
 ini_set('error_append_string', "\n");
 
@@ -28,7 +28,7 @@ function errorHandler($errno , $errstr, $errfile, $errline, $errcontext)
 		if(is_string($val))
 			$ctx .= $val;
 		else
-			$ctx .= var_export($val, true);
+			$ctx .= @var_export($val, true);
 		$ctx .= "\n";
 	}
 	$ctx .= '################ CTX ID '.$ctx_id.' ('.date('r').") ################\n";
@@ -63,7 +63,7 @@ function errorHandler($errno , $errstr, $errfile, $errline, $errcontext)
 						$str .= $a.', ';
 						break;
 					case 'array':
-						$str .=  preg_replace('/[\r\n]+/', '', var_export($a, true)).', ';
+						$str .=  preg_replace('/[\r\n]+/', '', @var_export($a, true)).', ';
 						break;
 					case 'object':
 						$str .= get_class($a).', ';
