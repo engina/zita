@@ -1,8 +1,6 @@
 <?php
 namespace Zita\Annotations;
 
-require_once('IAnnotation.php');
-
 use Zita\IAnnotation;
 use Zita\Request;
 use Zita\Response;

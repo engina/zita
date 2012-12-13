@@ -1,6 +1,5 @@
 <?php
-
-require_once('api/0.1/zita/src/Reflector.php');
+require_once('api/0.1/zita/Zita/Core.php');
 
 /**
  * 

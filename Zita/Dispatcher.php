@@ -1,14 +1,6 @@
 <?php
 namespace Zita;
 
-require_once('Core.php');
-require_once('Request.php');
-require_once('Response.php');
-require_once('Controller.php');
-require_once('Reflector.php');
-require_once('IAnnotation.php');
-require_once('Filters.php');
-
 /**
  * Dispatcher class is responsible for orchestrating the workflow.
  * 
@@ -19,41 +11,8 @@ class Dispatcher
 {
 	private $appNs = '';
 	private $controllersDir = 'Controllers';
-
-
-	/**
-	 * Before event handlers receive parameter Request.
-	 * If an event handler returns false, subsequent handlers won't be called.
-	 * <code>
-	 * funciton json_decoder(Request $req, Response $resp)
-	 * {
-	 *     if($resp->headers['Content-type'] != 'application/json') return;
-	 *     $resp->params = json_decode($resp->body);
-	 * }
-	 * $dispatcher->before->add('json_decoder');
-	 * </code>
-	 */
-	public $inputFilters;
 	
-	/**
-	 * After event handlers receive parameters Request and Response.
-	 * If an event handler returns false, subsequent handlers won't be called.
-	 * <code>
-	 * funciton json_encoder(Request $req, Response $resp)
-	 * {
-	 *     $resp->body = json_encode($resp->body);
-	 *     $callback = $req->param('callback');
-	 *     $resp->headers['Content-type'] = 'application/json';
-	 *     if($callback != null)
-	 *     {
-	 *         $resp->body = $callback.'('.$resp->body.');';
-	 *     $resp->headers['Content-type'] = 'application/script';
-	 *     }
-	 * }
-	 * </code>
-	 * $dispatcher->after->add('json_encoder');
-	 */
-	public $outputFilters;
+	public  $filters = null;
 	
 	/**
 	 * Initiliazes and configures dispatchers.
@@ -62,7 +21,7 @@ class Dispatcher
 	 * <code>
 	 * namespace MyApp;
 	 * 
-	 * require_once('zita/src/Dispatcher.php');
+	 * require_once('zita/src/Core.php');
 	 * 
 	 * $d = new Zita\Dispatcher(__NAMESPACE__);
 	 * $d->dispatch();
@@ -87,9 +46,7 @@ class Dispatcher
 	{
 		$this->appNs = $appNs;
 		$this->controllersDir = $controllersDir;
-		Core::$INCLUDES[] = APP_ROOT.DS.$controllersDir;
-		$this->inputFilters  = new Filters();
-		$this->outputFilters = new Filters();
+		$this->filters  = new Filters();
 	}
 	
 	/**
@@ -160,7 +117,7 @@ class Dispatcher
 			if($req === null)
 				$req = new Request();
 			
-			$this->inputFilters->process($req, new Response());
+			$this->filters->preProcess($req, new Response());
 			
 			if($req->method == 'OPTIONS')
 				goto respond;
@@ -212,10 +169,8 @@ class Dispatcher
 			foreach($annotations as $annotation => $params)
 			{
 				$annotation .= 'Annotation';
-				$annotationClass = Core::load($annotation);
-				if($annotationClass === false)
-					throw new Exception("Unknown annotation '$annotation'");
-				$annotation = new $annotationClass($params);
+				$classPath = Core::load($annotation);
+				$annotation = new $classPath($params);
 				if(!($annotation instanceof IAnnotation))
 					throw new Exception("Annotation class does not implement IAnnotation interface");
 				$annotation->preProcess($req, new Response(), $ctrl, $m);
@@ -235,12 +190,12 @@ class Dispatcher
 			foreach($annotations as $annotation => $params)
 			{
 				$annotation .= 'Annotation';
-				$annotationClass = Core::load($annotation);
-				$annotation = new $annotationClass($params);
+				$classPath = Core::load($annotation);
+				$annotation = new $classPath($params);
 				$annotation->postProcess($req, $RESPONSE, $ctrl, $m);
 			}
 			
-			$this->outputFilters->process($req, $RESPONSE);
+			$this->filters->postProcess($req, $RESPONSE);
 			
 			// Allow simple methods to just return text
 			if(!($RESPONSE instanceof \Zita\Response))

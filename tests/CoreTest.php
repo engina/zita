@@ -53,15 +53,15 @@ namespace // Global
 		
 	}
 	
-	require_once('api/0.1/zita/src/Dispatcher.php');
+	require_once('api/0.1/zita/Zita/Core.php');
+	
 	use Zita\Core;
 	
 	class CoreTest extends PHPUnit_Framework_TestCase
 	{
 		public function testAutoLoading()
 		{
-			Core::init();
-			$this->assertEquals("C:\\Users\\Engin\\Code\\PHP\\WMI\\api\\0.1\\zita\\src", ZITA_ROOT);
+			$this->assertEquals("C:\\Users\\Engin\\Code\\PHP\\WMI\\api\\0.1\\zita", ZITA_ROOT);
 			$this->assertEquals("\\A", Core::load("A"));
 			$this->assertEquals("\\TestNS1\\A", Core::load("TestNS1\\A"));
 			$this->assertEquals("\\TestNS2\\A", Core::load("TestNS2\\A"));
@@ -71,8 +71,8 @@ namespace // Global
 			$this->assertEquals("\\TestNS2\\SubB\D", Core::load("SubB\\D"));
 			$this->assertEquals("\\TestNS2\\C", Core::load("C"));
 			$this->assertFalse(class_exists('JsonOutput'));
-			$this->assertEquals("\\Zita\\Filters\\JsonOutput", Core::load("JsonOutput"));
-			$this->assertEquals("\\Zita\\Filters\\JsonOutput", Core::load("Filters\\JsonOutput"));
+			$this->assertEquals("\\Zita\\Filters\\JsonOutput", Core::load("Zita\\Filters\\JsonOutput"));
+			$this->assertEquals("\\Zita\\Filters\\JsonOutput", Core::load("Zita\\Filters\\JsonOutput"));
 			
 		}
 	}

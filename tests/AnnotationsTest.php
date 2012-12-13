@@ -1,5 +1,5 @@
 <?php
-require_once('api/0.1/zita/src/Dispatcher.php');
+require_once('api/0.1/zita/Zita/Core.php');
 
 use Zita\Request;
 use Zita\Response;
@@ -53,7 +53,6 @@ class AnnotationsTest extends PHPUnit_Framework_TestCase
 {
 	public function testInvalidAnnotation()
 	{
-		Core::init();
 		$name = 'John';
 		$req = new Request();
 		$req->params->c = 'AnnotationsTestController';
@@ -66,7 +65,6 @@ class AnnotationsTest extends PHPUnit_Framework_TestCase
 	
 	public function testAnnotation()
 	{
-		Core::init();
 		$name = 'John';
 		$req = new Request();
 		$req->params->c = 'AnnotationsTestController';
@@ -74,7 +72,7 @@ class AnnotationsTest extends PHPUnit_Framework_TestCase
 		$req->params->name = $name;
 		$d = new Dispatcher();
 		$d->dispatch($req);
-		$expected = array('errno' => 0, 'msg' => "Unknown annotation 'InvalidAnnotationAnnotation'");
+		$expected = array('errno' => 0, 'msg' => "Could not load class 'InvalidAnnotationAnnotation'");
 		$this->expectOutputString(var_export($expected, true));
 	}
 }

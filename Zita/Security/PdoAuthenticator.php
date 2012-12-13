@@ -1,8 +1,6 @@
 <?php
 namespace Zita\Security;
 
-require_once('IAuthenticator.php');
-
 class PdoAuthenticator implements IAuthenticator
 {
 	private $identifierField;
@@ -37,13 +35,16 @@ class PdoAuthenticator implements IAuthenticator
 		$p = $obj['password'];
 		$r = $this->selectStatement->bindParam(':identifier', $i) | $this->selectStatement->bindParam(':identifier', $i);
 		if(!$r)
-		{
 			throw new \Exception('Could not bind parameters. Please check your statement.');
-		}
+		
 		$this->selectStatement->execute();
 		if($this->selectStatement->rowCount() == 0)
 			throw new \Exception('Authentication failed.');
+		
 		$result = $this->selectStatement->fetch(\PDO::FETCH_ASSOC);
+		
+		if(!isset($result[$this->passwordField]))
+			throw new \Exception("Password field '$this->passwordField' does not exist in the results.");
 		$password = $result[$this->passwordField];
 		list($algo, $hashed) = explode(':', $password);
 		if(hash($algo, $p) != $hashed)

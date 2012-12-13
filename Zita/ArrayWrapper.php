@@ -13,7 +13,9 @@ class ArrayWrapper
 	public function __get($name)
 	{
 		if(!isset($this->m_arr[$name]))
+		{
 			return null;
+		}
 		return $this->m_arr[$name];
 	}
 	

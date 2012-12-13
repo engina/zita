@@ -1,8 +1,6 @@
 <?php
 namespace Zita\Filters;
 
-require_once('OutputFilter.php');
-
 use Zita\Request;
 use Zita\Response;
 

@@ -1,8 +1,6 @@
 <?php
 namespace Zita;
 
-require_once('Filter.php');
-
 class Filters
 {
 	private $callbacks = array();
@@ -21,11 +19,18 @@ class Filters
 		unset($this->callbacks[$key]);
 	}
 	
-	public function process(Request $req, Response $resp)
+	public function preProcess(Request $req, Response $resp)
 	{
 		foreach($this->callbacks as $callback)
 		{
 			if($callback->preProcess($req) === false) break;
+		}
+	}
+	
+	public function postProcess(Request $req, Response $resp)
+	{
+		foreach($this->callbacks as $callback)
+		{
 			if($callback->postProcess($req, $resp) === false) break;
 		}
 	}

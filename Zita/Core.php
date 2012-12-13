@@ -4,24 +4,43 @@ namespace Zita;
 require('Debug.php');
 require('Exception.php');
 
-define('ZITA_ROOT', dirname(__FILE__));
-define('APP_ROOT', dirname($_SERVER['SCRIPT_FILENAME']));
-
 define('DS', DIRECTORY_SEPARATOR);
 define('PS', PATH_SEPARATOR);
 
+define('ZITA_ROOT', dirname(dirname(__FILE__)));
+define('APP_ROOT', str_replace('/', DS, dirname($_SERVER['SCRIPT_FILENAME'])));
+
+Core::addIncludePath(ZITA_ROOT);
+Core::addIncludePath(Core::path(ZITA_ROOT, 'Zita'));
+Core::addIncludePath(Core::path(ZITA_ROOT, 'Zita', 'Annotations'));
+Core::addIncludePath(Core::path(ZITA_ROOT, 'Zita', 'Filters'));
+Core::addIncludePath(APP_ROOT);
+Core::addIncludePath(Core::path(APP_ROOT, 'Controllers'));
+Core::addIncludePath(getcwd());
+
+function classloader($c)
+{
+	$c = str_replace('\\', DS, $c);
+
+	$paths = get_include_path();
+	$paths = explode(PS, $paths);
+	foreach($paths as $path)
+	{
+		$test = $path.DS.$c.'.php';
+		if(!is_readable($test)) continue;
+		require_once($test);
+		return;
+	}
+	error_log("Failed to auto load class '$c'");
+}
+
+\spl_autoload_register('Zita\classloader');
+
 class Core
 {
-	public static $INCLUDES = array();
-	
-	public static function init()
+	public static function addIncludePath($path)
 	{
-		set_include_path(ZITA_ROOT.PS.get_include_path());
-		self::$INCLUDES[] = ZITA_ROOT;
-		self::$INCLUDES[] = ZITA_ROOT.DS.'Filters';
-		self::$INCLUDES[] = ZITA_ROOT.DS.'Validators';
-		self::$INCLUDES[] = ZITA_ROOT.DS.'Annotations';
-		self::$INCLUDES[] = APP_ROOT;
+		set_include_path($path.PS.get_include_path());
 	}
 	
 	/**
@@ -46,15 +65,20 @@ class Core
 		if($class{0} != "\\")
 			$class = "\\$class";
 		
-		$cls = get_declared_classes();
 		if(class_exists($class))
+		{
 			return $class;
+		}
+		
+		$cls = get_declared_classes();
 		
 		foreach($cls as $cl)
 		{
 			$match = substr($cl, -strlen($class));
 			if($match === $class)
+			{
 				return "\\$cl";
+			}
 		}
 		return null;
 	}
@@ -81,35 +105,21 @@ class Core
 	/**
 	 * Tries to find the class you want.
 	 * 
-	 * If it is not already loaded tries to load it from paths in Core::$INCLUDES
+	 * If it is not already loaded tries to load it from get_include_paths()
 	 * 
 	 * @param $class class path such MyNamespace\Foo
 	 * @return full class path \Company\MyNamespace\Foo if found, false otherwise
 	 */
 	public static function load($class)
 	{
-		// Try to resolve class now
 		$fullPath = self::resolveClass($class);
 		if($fullPath != null)
 			return $fullPath;
-		
-		// The class does not exist now, try to load it.
-		foreach(self::$INCLUDES as $i)
-		{
-			$tokens = explode("\\", $class);
-			array_unshift($tokens, $i);
-			$path = call_user_func_array("\\Zita\\Core::path", $tokens).'.php';
-			if(!is_readable($path)) continue;
-			require_once($path);
-			
-			// A file matching the class is loaded try to resolve it again
-			$fullPath = self::resolveClass($class);
-			if($fullPath == null)
-				return false;
-			return $fullPath;
-		}
-		
-		return false;
+		// Class does not exist
+		classloader($class);
+		$path = self::resolveClass($class);
+		if($path === null)
+			throw new Exception("Could not load class '$class'");
 	}
 	
 	public static function normalize($name)

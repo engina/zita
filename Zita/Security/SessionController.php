@@ -1,8 +1,6 @@
 <?php
 namespace Zita\Security;
 
-require_once('Response.php');
-
 use \Zita\Response;
 use \Zita\Controller;
 
@@ -22,6 +20,9 @@ abstract class SessionController extends Controller
 			throw new \Exception("Invalid authenticator '$authenticator'");
 		
 		$user = $this->authenticatorsDict[$authenticator]->authenticate($data);
+		if($user == null)
+			throw new \Exception("Not authorized");
+		return new Response(array("status" => "ok"));
 	}
 	
 	public function authmethods()

@@ -1,8 +1,6 @@
 <?php
 namespace Zita\Annotations;
 
-require_once('IAnnotation.php');
-
 use Zita\IAnnotation;
 use Zita\Request;
 use Zita\Response;
@@ -22,7 +20,7 @@ class FilterAnnotation implements IAnnotation
 	public function __construct($cfg)
 	{
 		$this->cfg = $cfg;
-		$this->filters = explode(',', $cfg);
+		$this->filters = explode('|', $cfg);
 	}
 	
 	public function preProcess(Request $req, Response $resp, Controller $controller = null, $method = null)

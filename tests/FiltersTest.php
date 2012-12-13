@@ -1,5 +1,5 @@
 <?php
-require_once('api/0.1/zita/src/Dispatcher.php');
+require_once('api/0.1/zita/Zita/Core.php');
 
 use \Zita\Dispatcher;
 use \Zita\Filters;
@@ -60,7 +60,7 @@ class FilterCancel extends Filter
 class ComplexFilterTestController extends Controller
 {
 	/**
-	 * @Filter FilterA,FilterA,FilterB,FilterC,JsonOutput
+	 * @Filter FilterA|FilterA|FilterB|FilterC|\Zita\Filters\JsonOutput
 	 */
 	public function hello($name)
 	{
@@ -76,7 +76,7 @@ class FiltersTest extends PHPUnit_Framework_TestCase
 		$resp = new Response(); 
 		$e = new Filters();
 		$e->add(new FilterA());
-		$e->process($req, $resp);
+		$e->postProcess($req, $resp);
 		$this->assertEquals('a', $resp->body);
 	}
 	
@@ -88,7 +88,7 @@ class FiltersTest extends PHPUnit_Framework_TestCase
 		$e->add(new FilterA());
 		$e->add(new FilterB());
 		$e->add(new FilterC());
-		$e->process($req, $resp);
+		$e->postProcess($req, $resp);
 		$this->assertEquals('abc', $resp->body);
 	}
 	
@@ -101,7 +101,7 @@ class FiltersTest extends PHPUnit_Framework_TestCase
 		$b = $e->add(new FilterB());
 		$e->add(new FilterC());
 		$e->remove($b);
-		$e->process($req, $resp);
+		$e->postProcess($req, $resp);
 		$this->assertEquals('ac', $resp->body);
 	}
 	
@@ -114,13 +114,12 @@ class FiltersTest extends PHPUnit_Framework_TestCase
 		$e->add(new FilterB());
 		$e->add(new FilterCancel());
 		$e->add(new FilterC());
-		$e->process($req, $resp);
+		$e->postProcess($req, $resp);
 		$this->assertEquals('ab', $resp->body);
 	}
 	
 	public function testDispatcherFilter()
 	{
-		Core::init();
 		$req  = new Request();
 		$resp = new Response(); 
 		$d    = new Dispatcher();

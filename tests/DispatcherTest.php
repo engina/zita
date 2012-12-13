@@ -1,5 +1,5 @@
 <?php
-require_once('api/0.1/zita/src/Dispatcher.php');
+require_once('api/0.1/zita/Zita/Core.php');
 
 use Zita\Request;
 use Zita\Dispatcher;
@@ -23,7 +23,7 @@ class DispatcherTest extends PHPUnit_Framework_TestCase
 		$req->params->m = 'hello';
 		$d = new Dispatcher();
 		$d->dispatch($req);
-		$expected = array('errno' => 0, 'msg' => "Controller 'InvalidController' not found");
+		$expected = array('errno' => 0, 'msg' => "Could not load class 'Invalidcontroller'");
 		$this->expectOutputString(var_export($expected, true));
 	}
 	

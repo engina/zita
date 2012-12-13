@@ -1,5 +1,5 @@
 <?php
-require_once('api/0.1/zita/src/Dispatcher.php');
+require_once('api/0.1/zita/Zita/Core.php');
 
 $dummy_data = array('a' => 1, 'b' => 2);
 

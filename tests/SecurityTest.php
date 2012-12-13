@@ -1,5 +1,5 @@
 <?php
-require_once('api/0.1/zita/src/Dispatcher.php');
+require_once('api/0.1/zita/Zita/Core.php');
 
 use Zita\Request;
 use Zita\Dispatcher;
@@ -22,7 +22,6 @@ class SecurityTest extends PHPUnit_Framework_TestCase
 {
 	public function testOne()
 	{
-		Core::init();
 		$req = new Request();
 		$req->params->c = 'SecurityTestController';
 		$req->params->m = 'hello';
