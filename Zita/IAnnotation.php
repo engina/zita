@@ -27,7 +27,7 @@ interface IAnnotation
 	 * @param Controller $controller
 	 * @param unknown_type $method
 	 */
-	public function preProcess (Request $req, Response $resp, Controller $controller = null, $method = null);
+	public function preProcess (Request $req, Response $resp, Service $service = null, $method = null);
 	
 	/**
 	 * Ran after the controller->method has been invoked
@@ -36,5 +36,5 @@ interface IAnnotation
 	 * @param Controller $controller
 	 * @param unknown_type $method
 	 */
-	public function postProcess(Request $req, Response $resp, Controller $controller = null, $method = null);
+	public function postProcess(Request $req, Response $resp, Service $service = null, $method = null);
 }

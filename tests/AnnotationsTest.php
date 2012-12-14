@@ -3,7 +3,7 @@ require_once('api/0.1/zita/Zita/Core.php');
 
 use Zita\Request;
 use Zita\Response;
-use Zita\Controller;
+use Zita\Service;
 use Zita\Dispatcher;
 use Zita\IAnnotation;
 use Zita\Core;
@@ -20,12 +20,12 @@ class TestAnnotation implements IAnnotation
 		list($this->pre, $this->post) = explode(',', $cfg);
 	}
 	
-	public function preProcess(Request $req, Response $resp, Controller $controller = null, $method = null)
+	public function preProcess(Request $req, Response $resp, Service $service = null, $method = null)
 	{
 		$req->params->name .= $this->pre;
 	}
 	
-	public function postProcess(Request $req, Response $resp, Controller $controller = null, $method = null)
+	public function postProcess(Request $req, Response $resp, Service $service = null, $method = null)
 	{
 		$resp->body .= $this->post;
 	}
@@ -34,7 +34,7 @@ class TestAnnotation implements IAnnotation
 /**
  * @Test prev,post
  */
-class AnnotationsTestController extends Controller
+class AnnotationsTestService extends Service
 {
 	public function hello($name)
 	{
@@ -55,24 +55,24 @@ class AnnotationsTest extends PHPUnit_Framework_TestCase
 	{
 		$name = 'John';
 		$req = new Request();
-		$req->params->c = 'AnnotationsTestController';
-		$req->params->m = 'hello';
+		$req->params->service = 'AnnotationsTestService';
+		$req->params->method = 'hello';
 		$req->params->name = $name;
 		$d = new Dispatcher();
-		$d->dispatch($req);
-		$this->expectOutputString("Hello $name".'prevpost');
+		$response = $d->dispatch($req);
+		$this->assertEquals("Hello $name".'prevpost', $response->body);
 	}
 	
 	public function testAnnotation()
 	{
 		$name = 'John';
 		$req = new Request();
-		$req->params->c = 'AnnotationsTestController';
-		$req->params->m = 'hola';
+		$req->params->service = 'AnnotationsTestService';
+		$req->params->method = 'hola';
 		$req->params->name = $name;
 		$d = new Dispatcher();
 		$d->dispatch($req);
-		$expected = array('errno' => 0, 'msg' => "Could not load class 'InvalidAnnotationAnnotation'");
+		$expected = array('status' => 'FAIL', 'type' => 'Zita\ClassNotFoundException', 'errno' => 1000, 'msg' => "Could not load class 'InvalidAnnotationAnnotation'");
 		$this->expectOutputString(var_export($expected, true));
 	}
 }

@@ -4,7 +4,7 @@ namespace Zita\Annotations;
 use Zita\IAnnotation;
 use Zita\Request;
 use Zita\Response;
-use Zita\Controller;
+use Zita\Service;
 
 class SecureAnnotation implements IAnnotation
 {
@@ -13,12 +13,12 @@ class SecureAnnotation implements IAnnotation
 		
 	}
 
-	public function preProcess (Request $req, Response $resp, Controller $controller = null, $method = null)
+	public function preProcess (Request $req, Response $resp, Service $service = null, $method = null)
 	{
 		throw new \Exception("Authentication is required.", 101);
 	}
 
-	public function postProcess (Request $req, Response $resp, Controller $controller = null, $method = null)
+	public function postProcess (Request $req, Response $resp, Service $service = null, $method = null)
 	{
 		
 	}

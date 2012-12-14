@@ -1,6 +1,14 @@
 <?php
 namespace Zita;
 
+const DISPATCHER_ERROR_INVALID_SERVICE_NAME = 0;
+const DISPATCHER_ERROR_SERVICE_NOT_FOUND    = 1;
+const DISPATCHER_ERROR_SERVICE_IMPL         = 2;
+const DISPATCHER_ERROR_METHOD_NOT_FOUND        = 3;
+const DISPATCHER_ERROR_METHOD_PARAM            = 4;
+const DISPATCHER_ERROR_METHOD_ACCESS           = 5;
+const DISPATCHER_ERROR_ANNOTATION_IMPL         = 6;
+ 
 /**
  * Dispatcher class is responsible for orchestrating the workflow.
  * 
@@ -9,44 +17,11 @@ namespace Zita;
  */
 class Dispatcher
 {
-	private $appNs = '';
-	private $controllersDir = 'Controllers';
+	public  $pluginContainer = null;
 	
-	public  $filters = null;
-	
-	/**
-	 * Initiliazes and configures dispatchers.
-	 * 
-	 * __api.php__
-	 * <code>
-	 * namespace MyApp;
-	 * 
-	 * require_once('zita/src/Core.php');
-	 * 
-	 * $d = new Zita\Dispatcher(__NAMESPACE__);
-	 * $d->dispatch();
-	 * </code>
-	 * 
-	 * __Controllers\Test.php__
-	 * <code>
-	 * namespace MyApp\Controllers;
-	 * 
-	 * class Test extends Zita\Controllers
-	 * {
-	 *     public function hello($name)
-	 *     {
-	 *         return new Response("Hello $name");
-	 *     }
-	 * }
-	 * </code>
-	 * @param $appNs namespace of your application, will be prepended to Controller class names. Normally you'd just use \_\_NAMESPACE\_\_
-	 * @param $controllersDir directory of controllers
-	 */
-	public function __construct($appNs = '', $controllersDir = 'Controllers')
+	public function __construct()
 	{
-		$this->appNs = $appNs;
-		$this->controllersDir = $controllersDir;
-		$this->filters  = new Filters();
+		$this->pluginContainer  = new PluginContainer();
 	}
 	
 	/**
@@ -70,7 +45,7 @@ class Dispatcher
 		foreach($classes as $class)
 		{
 			$r = new \ReflectionClass($class);
-			if(!$r->isSubclassOf('\Zita\Controller'))
+			if(!$r->isSubclassOf('\Zita\Service'))
 				continue;
 			$m = array();
 			$methods = $r->getMethods(\ReflectionMethod::IS_PUBLIC);
@@ -114,10 +89,15 @@ class Dispatcher
 		$RESPONSE = array();
 		try
 		{
+			$flush = false;
 			if($req === null)
+			{
 				$req = new Request();
+				$flush = true;
+			}
 			
-			$this->filters->preProcess($req, new Response());
+			if($this->pluginContainer->preProcess($req, new Response()) === true)
+				goto respond;
 			
 			if($req->method == 'OPTIONS')
 				goto respond;
@@ -128,43 +108,49 @@ class Dispatcher
 				goto respond;
 			}
 			
-			$c = $req->params->c;
-			$m = $req->params->m;
+			$service = $req->params->service;
+			$m       = $req->params->method;
 
-			if($c === null || empty($c))
-				$c = 'Default';
+			if($service === null || empty($service))
+				$service = 'Default';
 				
-			if(!ctype_alnum($c))
-				throw new Exception('Invalid controller name', 0);
+			if(!ctype_alnum($service))
+				throw new DispatcherException('Invalid service name', DISPATCHER_ERROR_INVALID_SERVICE_NAME);
 			
 			if($m === null || empty($m))
 				$m = 'index';
+			
 			$m = strtolower($m);
 			
-			$classPath = Core::load(Core::normalize($c));
+			$classPath = '';
+			try
+			{
+				$classPath = Core::load(ucfirst($service), Core::getServicePaths());
+			}
+			catch(ClassNotFoundException $e)
+			{
+				throw new DispatcherException("Could not find service '$service'", DISPATCHER_ERROR_SERVICE_NOT_FOUND);
+			}
 			
-			if($classPath === false)
-				throw new Exception("Controller '$c' not found");
-			
-			$c = $classPath;
+			$service = $classPath;
 			
 			// Class loaded fine, inspect it.
-			$ctrl = new \ReflectionClass($c);
+			$serviceReflection = new \ReflectionClass($classPath);
 			
-			if(!$ctrl->isSubclassOf('Zita\Controller'))
-				throw new Exception('Invalid controller implementation');
+			if(!$serviceReflection->isSubclassOf('Zita\Service'))
+				throw new DispatcherException('Invalid service implementation.', DISPATCHER_ERROR_SERVICE_IMPL);
 
-			if(!$ctrl->hasMethod($m))
-				throw new Exception('Method not found', 2);
+			if(!$serviceReflection->hasMethod($m))
+				throw new DispatcherException('Method not found.', DISPATCHER_ERROR_METHOD_NOT_FOUND);
 				
-			$method = $ctrl->getMethod($m);
+			$method = $serviceReflection->getMethod($m);
 			if(!$method->isPublic())
-				throw new Exception('Method not accessible', 3);
-			
+				throw new DispatcherException('Method not accessible.', DISPATCHER_ERROR_METHOD_ACCESS);
+
 			// annotations
-			$annotations = Reflector::getMergedMethodAnnotation($c, $m);
+			$annotations = Reflector::getMergedMethodAnnotation($classPath, $m);
 			
-			$ctrl = new $c($req);
+			$service = new $classPath($req);
 			
 			foreach($annotations as $annotation => $params)
 			{
@@ -172,8 +158,8 @@ class Dispatcher
 				$classPath = Core::load($annotation);
 				$annotation = new $classPath($params);
 				if(!($annotation instanceof IAnnotation))
-					throw new Exception("Annotation class does not implement IAnnotation interface");
-				$annotation->preProcess($req, new Response(), $ctrl, $m);
+					throw new DispatcherException("Annotation class does not implement IAnnotation interface", DISPATCHER_ERROR_ANNOTATION_IMPL);
+				$annotation->preProcess($req, new Response(), $service, $m);
 			}
 			
 			$paramList = array();
@@ -181,21 +167,21 @@ class Dispatcher
 			foreach($params as $p => $param)
 			{
 				if($req->params->__get($param->name) == null && !$param->isOptional())
-					throw new Exception('Missing parameters');
+					throw new DispatcherException('Missing parameters.', DISPATCHER_ERROR_METHOD_PARAM);
 				array_push($paramList, $req->params->__get($param->name));
 			}
 			
-			$RESPONSE = $method->invokeArgs($ctrl, $paramList);
+			$RESPONSE = $method->invokeArgs($service, $paramList);
 			
 			foreach($annotations as $annotation => $params)
 			{
 				$annotation .= 'Annotation';
 				$classPath = Core::load($annotation);
 				$annotation = new $classPath($params);
-				$annotation->postProcess($req, $RESPONSE, $ctrl, $m);
+				$annotation->postProcess($req, $RESPONSE, $service, $m);
 			}
 			
-			$this->filters->postProcess($req, $RESPONSE);
+			$this->pluginContainer->postProcess($req, $RESPONSE);
 			
 			// Allow simple methods to just return text
 			if(!($RESPONSE instanceof \Zita\Response))
@@ -204,12 +190,10 @@ class Dispatcher
 		catch(\Exception $e)
 		{
 			// $RESPONSE = array('errno' => $e->getCode(), 'msg' => $e->getMessage());
-			$RESPONSE = new Response(array('errno' => $e->getCode(), 'msg' => $e->getMessage()));
+			$RESPONSE = new Response(array('status' => 'FAIL', 'type' => get_class($e), 'errno' => $e->getCode(), 'msg' => $e->getMessage()));
 		}
 
 		respond:
-
-		header('HTTP/1.1 '.$RESPONSE->status);
 		
 		// Default headers
 		$headers = array(
@@ -225,14 +209,18 @@ class Dispatcher
 		// Let controller defined headers override defaults
 		$headers = array_merge($headers, $RESPONSE->headers);
 		
-		foreach($headers as $key => $value)
-			header($key.': '.$value);
+		$RESPONSE->headers = $headers;
 		
 		if(!is_string($RESPONSE->body))
 			$RESPONSE->body = var_export($RESPONSE->body);
-		
+
+		// If a hand crafted Request is given, we don't flush the output, instead we just return.
+		if(!$flush) return $RESPONSE;
+
+		header('HTTP/1.1 '.$RESPONSE->status);
+		foreach($headers as $key => $value)
+			header($key.': '.$value);
 		echo $RESPONSE->body;
-		return $RESPONSE;
 	}
 }
 

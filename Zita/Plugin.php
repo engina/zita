@@ -1,7 +1,7 @@
 <?php
 namespace Zita;
 
-abstract class Filter
+abstract class Plugin extends Service
 {
 	private $config;
 	

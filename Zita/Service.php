@@ -1,7 +1,7 @@
 <?php
 namespace Zita;
 
-class Controller
+class Service
 {
 	protected $request;
 	

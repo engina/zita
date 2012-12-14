@@ -4,15 +4,10 @@ namespace Zita\Annotations;
 use Zita\IAnnotation;
 use Zita\Request;
 use Zita\Response;
-use Zita\Controller;
+use Zita\Service;
 use Zita\Core;
 
-/**
- * This class handles @Filter annotations.
- * Basically @Filter annotation expects a comma separated list of class names
- * which are derived from Filter class.
- *
- */
+
 class FilterAnnotation implements IAnnotation
 {
 	private $cfg;
@@ -23,7 +18,7 @@ class FilterAnnotation implements IAnnotation
 		$this->filters = explode('|', $cfg);
 	}
 	
-	public function preProcess(Request $req, Response $resp, Controller $controller = null, $method = null)
+	public function preProcess(Request $req, Response $resp, Service $service = null, $method = null)
 	{
 		foreach($this->filters as $filter)
 		{
@@ -31,13 +26,13 @@ class FilterAnnotation implements IAnnotation
 			if($filterClass === false)
 				throw new \Zita\Exception("Unknown filter class '$filter'");
 			$filter = new $filterClass();
-			if(!($filter instanceof \Zita\Filter))
+			if(!($filter instanceof \Zita\Plugin))
 				throw new Exception("Filter class does not implement abstract Filter class methods");
 			$filter->preProcess($req);
 		}
 	}
 	
-	public function postProcess(Request $req, Response $resp, Controller $controller = null, $method = null)
+	public function postProcess(Request $req, Response $resp, Service $service = null, $method = null)
 	{
 		foreach($this->filters as $filter)
 		{
@@ -45,8 +40,8 @@ class FilterAnnotation implements IAnnotation
 			if($filterClass === false)
 				throw new \Zita\Exception("Unknown filter class '$filter'");
 			$filter = new $filterClass();
-			if(!($filter instanceof \Zita\Filter))
-				throw new Exception("Filter class does not implement abstract Filter class methods");
+			if(!($filter instanceof \Zita\Plugin))
+				throw new \Zita\Exception("Filter class does not implement abstract Plugin class methods");
 			$filter->postProcess($req, $resp);
 		}
 	}

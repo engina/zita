@@ -1,8 +1,7 @@
 <?php
 namespace Zita;
 
-require('Debug.php');
-require('Exception.php');
+// require('Debug.php');
 
 define('DS', DIRECTORY_SEPARATOR);
 define('PS', PATH_SEPARATOR);
@@ -10,34 +9,59 @@ define('PS', PATH_SEPARATOR);
 define('ZITA_ROOT', dirname(dirname(__FILE__)));
 define('APP_ROOT', str_replace('/', DS, dirname($_SERVER['SCRIPT_FILENAME'])));
 
+Core::addServicePath(Core::path(APP_ROOT, 'Controllers'));
 Core::addIncludePath(ZITA_ROOT);
 Core::addIncludePath(Core::path(ZITA_ROOT, 'Zita'));
 Core::addIncludePath(Core::path(ZITA_ROOT, 'Zita', 'Annotations'));
 Core::addIncludePath(Core::path(ZITA_ROOT, 'Zita', 'Filters'));
+Core::addIncludePath(Core::path(ZITA_ROOT, 'Zita', 'Plugins'));
 Core::addIncludePath(APP_ROOT);
-Core::addIncludePath(Core::path(APP_ROOT, 'Controllers'));
+Core::addIncludePath(Core::path(APP_ROOT, 'Services'));
 Core::addIncludePath(getcwd());
 
-function classloader($c)
+function classloader($class, $paths = null)
 {
-	$c = str_replace('\\', DS, $c);
+	$class = str_replace('\\', DS, $class);
 
-	$paths = get_include_path();
+	if($paths == null)
+		$paths = get_include_path();
+	
 	$paths = explode(PS, $paths);
 	foreach($paths as $path)
 	{
-		$test = $path.DS.$c.'.php';
+		$test = $path.DS.$class.'.php';
 		if(!is_readable($test)) continue;
 		require_once($test);
 		return;
 	}
-	error_log("Failed to auto load class '$c'");
 }
 
 \spl_autoload_register('Zita\classloader');
 
 class Core
 {
+	private static $SERVICE_PATHS;
+	
+	public static function addServicePath($path)
+	{
+		self::$SERVICE_PATHS = $path.PS.self::$SERVICE_PATHS;
+	}
+	
+	public static function removeServicePath($path)
+	{
+		$paths = self::getServicePaths();
+		$key   = array_search($path, $paths);
+		if($key === false) return false;
+		unset($paths[$key]);
+		self::$SERVICE_PATHS = implode(PS, $paths);
+		return true;
+	}
+	
+	public static function getServicePaths()
+	{
+		return explode(PS, self::$SERVICE_PATHS);
+	}
+	
 	public static function addIncludePath($path)
 	{
 		set_include_path($path.PS.get_include_path());
@@ -65,7 +89,7 @@ class Core
 		if($class{0} != "\\")
 			$class = "\\$class";
 		
-		if(class_exists($class))
+		if(class_exists($class, false))
 		{
 			return $class;
 		}
@@ -110,16 +134,19 @@ class Core
 	 * @param $class class path such MyNamespace\Foo
 	 * @return full class path \Company\MyNamespace\Foo if found, false otherwise
 	 */
-	public static function load($class)
+	public static function load($class, $paths = null)
 	{
 		$fullPath = self::resolveClass($class);
 		if($fullPath != null)
 			return $fullPath;
 		// Class does not exist
-		classloader($class);
+		if(is_array($paths))
+			$paths = implode(PS, $paths);
+		classloader($class, $paths);
 		$path = self::resolveClass($class);
 		if($path === null)
-			throw new Exception("Could not load class '$class'");
+			throw new ClassNotFoundException("Could not load class '$class'");
+		return $path;
 	}
 	
 	public static function normalize($name)

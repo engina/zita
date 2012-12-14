@@ -1,17 +1,17 @@
 <?php
 namespace Zita;
 
-class Filters
+class PluginContainer
 {
 	private $callbacks = array();
 	
-	public function add(Filter $c)
+	public function add(Plugin $c)
 	{
 		$this->callbacks[] = $c;
 		return $c;
 	}
 	
-	public function remove(Filter $c)
+	public function remove(Plugin $c)
 	{
 		$key = array_search($c, $this->callbacks);
 		if($key === false)

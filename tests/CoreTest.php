@@ -70,10 +70,51 @@ namespace // Global
 			$this->assertEquals("\\TestNS1\\SubA\D", Core::load("SubA\\D"));
 			$this->assertEquals("\\TestNS2\\SubB\D", Core::load("SubB\\D"));
 			$this->assertEquals("\\TestNS2\\C", Core::load("C"));
-			$this->assertFalse(class_exists('JsonOutput'));
+			$this->assertFalse(class_exists('JsonOutput', false));
 			$this->assertEquals("\\Zita\\Filters\\JsonOutput", Core::load("Zita\\Filters\\JsonOutput"));
 			$this->assertEquals("\\Zita\\Filters\\JsonOutput", Core::load("Zita\\Filters\\JsonOutput"));
-			
+		}
+		
+		/**
+		 * @expectedException Zita\ClassNotFoundException
+		 */
+		public function testAutoLoadFail()
+		{
+			Core::load("Zita\\FooBarBaz31337");
+		}
+		
+		public function testPath()
+		{
+			$paths = array('foo', 'bar', 'baz');
+			$expected = join(DIRECTORY_SEPARATOR, $paths);
+			$this->assertEquals($expected, Core::path('foo', 'bar', 'baz'));
+		}
+		
+		public function testIncludePath()
+		{
+			$path = get_include_path();
+			Core::addIncludePath('test');
+			$this->assertEquals('test'.PATH_SEPARATOR.$path, get_include_path());
+		}
+
+		private $dummyPath = 'test/Add/Service/path';
+		
+		public function testAddServicePath()
+		{
+			$this->assertFalse(Core::removeServicePath($this->dummyPath));
+			$this->assertFalse(array_search($this->dummyPath, Core::getServicePaths()));
+			Core::addServicePath($this->dummyPath);
+			$this->assertEquals(0, array_search($this->dummyPath, Core::getServicePaths()));
+		}
+		
+		/**
+		 * @depends testAddServicePath
+		 */
+		public function testRemoveServicePath()
+		{
+			$this->assertEquals(0, array_search($this->dummyPath, Core::getServicePaths()));
+			Core::removeServicePath($this->dummyPath);
+			$this->assertFalse(array_search($this->dummyPath, Core::getServicePaths()));
 		}
 	}
 }

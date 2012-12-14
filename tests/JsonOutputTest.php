@@ -6,7 +6,7 @@ $dummy_data = array('a' => 1, 'b' => 2);
 /**
  * @Filter JsonOutput
  */
-class JsonOutputTestController extends \Zita\Controller
+class JsonOutputTestService extends \Zita\Service
 {
 	public function dummyMethod()
 	{
@@ -22,11 +22,11 @@ class EncodersTest extends PHPUnit_Framework_TestCase
 		global $dummy_data;
 		$d   = new Zita\Dispatcher();
 		$req = new Zita\Request();
-		$req->params->c = 'JsonOutputTestController';
-		$req->params->m = 'dummyMethod';
+		$req->params->service  = 'JsonOutputTestService';
+		$req->params->method   = 'dummyMethod';
 		$req->params->callback = 'test';
 		$resp = $d->dispatch($req);
 		$this->assertEquals('application/json', $resp->headers['Content-type']);
-		$this->expectOutputString('test('.json_encode($dummy_data).');');
+		$this->assertEquals('test('.json_encode($dummy_data).');', $resp->body);
 	}
 }

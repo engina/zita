@@ -5,7 +5,7 @@ class ArrayWrapper
 {
 	private $m_arr = array();
 	
-	public function __construct($arr)
+	public function __construct(array $arr = array())
 	{
 		$this->m_arr = $arr;
 	}

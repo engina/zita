@@ -4,13 +4,8 @@ namespace Zita\Filters;
 use Zita\Request;
 use Zita\Response;
 
-class JsonOutput extends \Zita\OutputFilter
-{
-	public function preProcess(Request $req)
-	{
-		
-	}
-	
+class JsonOutput extends \Zita\OutputPlugin
+{	
 	public function postProcess(Request $req, Response $resp)
 	{
 		$resp->body = json_encode($resp->body);

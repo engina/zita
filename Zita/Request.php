@@ -7,11 +7,18 @@ class Request
 {
 	public function __construct()
 	{
-		$this->params  = new ArrayWrapper($_REQUEST);
+		// $_REQUEST aggragates $_GET, $_POST and $_COOKIE
+		// Though which one overrides the other is decided by variables_order directive
+		// of php.ini, therefore we aggregate $_COOKIE, $_POST, $_GET in this specific order.
+		// Meaning $_COOKIE has the least priority wher $_GET has the most. 
+		$params        = $_COOKIE;
+		$params        = array_merge($params, $_POST);
+		$params        = array_merge($params, $_GET);
+		$this->params  = new ArrayWrapper($params);
 		$this->get     = new ArrayWrapper($_GET);
 		$this->post    = new ArrayWrapper($_POST);
-		$this->cookie  = new ArrayWrapper($_COOKIE);
-		$this->session = new ArrayWrapper(isset($_SESSION) ? $_SESSION : array());
+		$this->cookie  = new ArrayWrapper($_COOKIE); 
+		$this->session = null;
 		$this->server  = new ArrayWrapper($_SERVER);
 		$this->method  = $this->server->REQUEST_METHOD;
 

@@ -2,14 +2,14 @@
 require_once('api/0.1/zita/Zita/Core.php');
 
 use \Zita\Dispatcher;
-use \Zita\Filters;
-use \Zita\Filter;
+use \Zita\PluginContainer;
+use \Zita\Plugin;
 use \Zita\Request;
 use \Zita\Response;
-use \Zita\Controller;
+use \Zita\Service;
 use \Zita\Core;
 
-class FilterA extends Filter
+class FilterA extends Plugin
 {
 	public function preProcess(Request $req)
 	{
@@ -21,7 +21,7 @@ class FilterA extends Filter
 	}
 }
 
-class FilterB extends Filter
+class FilterB extends Plugin
 {
 	public function preProcess(Request $req)
 	{
@@ -33,7 +33,7 @@ class FilterB extends Filter
 	}
 }
 
-class FilterC extends Filter
+class FilterC extends Plugin
 {
 	public function preProcess(Request $req)
 	{
@@ -45,7 +45,7 @@ class FilterC extends Filter
 	}
 }
 
-class FilterCancel extends Filter
+class FilterCancel extends Plugin
 {
 	public function preProcess(Request $req)
 	{
@@ -57,7 +57,7 @@ class FilterCancel extends Filter
 	}
 }
 
-class ComplexFilterTestController extends Controller
+class ComplexFilterTestService extends Service
 {
 	/**
 	 * @Filter FilterA|FilterA|FilterB|FilterC|\Zita\Filters\JsonOutput
@@ -74,7 +74,7 @@ class FiltersTest extends PHPUnit_Framework_TestCase
 	{
 		$req  = new Request();
 		$resp = new Response(); 
-		$e = new Filters();
+		$e = new PluginContainer();
 		$e->add(new FilterA());
 		$e->postProcess($req, $resp);
 		$this->assertEquals('a', $resp->body);
@@ -84,7 +84,7 @@ class FiltersTest extends PHPUnit_Framework_TestCase
 	{
 		$req  = new Request();
 		$resp = new Response(); 
-		$e = new Filters();
+		$e = new PluginContainer();
 		$e->add(new FilterA());
 		$e->add(new FilterB());
 		$e->add(new FilterC());
@@ -96,7 +96,7 @@ class FiltersTest extends PHPUnit_Framework_TestCase
 	{
 		$req  = new Request();
 		$resp = new Response(); 
-		$e = new Filters();
+		$e = new PluginContainer();
 		$e->add(new FilterA());
 		$b = $e->add(new FilterB());
 		$e->add(new FilterC());
@@ -109,7 +109,7 @@ class FiltersTest extends PHPUnit_Framework_TestCase
 	{
 		$req  = new Request();
 		$resp = new Response(); 
-		$e = new Filters();
+		$e = new PluginContainer();
 		$e->add(new FilterA());
 		$e->add(new FilterB());
 		$e->add(new FilterCancel());
@@ -124,10 +124,10 @@ class FiltersTest extends PHPUnit_Framework_TestCase
 		$resp = new Response(); 
 		$d    = new Dispatcher();
 		$name = 'John';
-		$req->params->c = 'ComplexFilterTestController';
-		$req->params->m = 'hello';
-		$req->params->name = $name;
+		$req->params->service = 'ComplexFilterTestService';
+		$req->params->method  = 'hello';
+		$req->params->name    = $name;
 		$resp = $d->dispatch($req);
-		$this->expectOutputString(json_encode("Hello $name".'a'.'a'.'b'.'c'));
+		$this->assertEquals(json_encode("Hello $name".'a'.'a'.'b'.'c'), $resp->body);
 	}
 }
