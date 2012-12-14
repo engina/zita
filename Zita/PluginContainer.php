@@ -15,15 +15,31 @@ class PluginContainer
 	{
 		$key = array_search($c, $this->callbacks);
 		if($key === false)
-			throw new Exception('Event handler not found');
+			throw new PluginException('Event handler not found', 2);
 		unset($this->callbacks[$key]);
 	}
-	
-	public function preProcess(Request $req, Response $resp)
+
+    /**
+     * @param Request $req
+     * @param Response $resp
+     * @return true if service should not be run
+     */
+    public function preProcess(Request $req, Response $resp)
 	{
 		foreach($this->callbacks as $callback)
 		{
-			if($callback->preProcess($req) === false) break;
+            try
+            {
+			    $callback->preProcess($req, $resp);
+            }
+            catch(PluginStopException $e)
+            {
+                return false;
+            }
+            catch(PluginCancelException $e)
+            {
+                return true;
+            }
 		}
 	}
 	
@@ -31,7 +47,14 @@ class PluginContainer
 	{
 		foreach($this->callbacks as $callback)
 		{
-			if($callback->postProcess($req, $resp) === false) break;
+            try
+            {
+                $callback->postProcess($req, $resp);
+            }
+            catch(PluginStopException $e)
+            {
+                break;
+            }
 		}
 	}
 }

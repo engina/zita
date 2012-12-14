@@ -10,6 +10,6 @@ abstract class Plugin extends Service
 		$this->config = $config;
 	}
 
-	abstract public function preProcess(Request $req);
+	abstract public function preProcess(Request $req, Response $resp);
 	abstract public function postProcess(Request $req, Response $resp);
 }

@@ -1,5 +1,5 @@
 <?php
-require_once('api/0.1/zita/Zita/Core.php');
+require_once('Zita/Core.php');
 
 use Zita\Request;
 use Zita\Response;
@@ -38,7 +38,7 @@ class AnnotationsTestService extends Service
 {
 	public function hello($name)
 	{
-		return new Response("Hello $name");
+	    $this->response->body = "Hello $name";
 	}
 	
 	/**
@@ -71,8 +71,8 @@ class AnnotationsTest extends PHPUnit_Framework_TestCase
 		$req->params->method = 'hola';
 		$req->params->name = $name;
 		$d = new Dispatcher();
-		$d->dispatch($req);
+		$resp = $d->dispatch($req);
 		$expected = array('status' => 'FAIL', 'type' => 'Zita\ClassNotFoundException', 'errno' => 1000, 'msg' => "Could not load class 'InvalidAnnotationAnnotation'");
-		$this->expectOutputString(var_export($expected, true));
+		$this->assertEquals(var_export($expected, true), $resp->body);
 	}
 }

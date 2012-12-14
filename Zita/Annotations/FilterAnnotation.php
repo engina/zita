@@ -28,7 +28,7 @@ class FilterAnnotation implements IAnnotation
 			$filter = new $filterClass();
 			if(!($filter instanceof \Zita\Plugin))
 				throw new Exception("Filter class does not implement abstract Filter class methods");
-			$filter->preProcess($req);
+			$filter->preProcess($req, $resp);
 		}
 	}
 	

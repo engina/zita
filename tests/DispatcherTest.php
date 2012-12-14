@@ -1,6 +1,5 @@
 <?php
-
-require_once('api/0.1/zita/Zita/Core.php');
+require_once('Zita/Core.php');
 
 use Zita\Request;
 use Zita\Dispatcher;
@@ -13,9 +12,9 @@ class DispatcherTestService extends Service
 {
 	public function hello($name)
 	{
-		return new Response("Hello $name");
+        $this->response->body = "Hello $name";
 	}
-	
+
 	private function secret()
 	{
 	}
@@ -25,7 +24,7 @@ class DispatcherTestServiceNoImpl
 {
 	public function hello($name)
 	{
-		return new Response("Hello $name");
+		$this->response->body = "Hello $name";
 	}
 }
 
@@ -37,9 +36,9 @@ class DispatcherTest extends PHPUnit_Framework_TestCase
 		$req->params->service = 'Invalid..Service';
 		$req->params->method = 'hello';
 		$d = new Dispatcher();
-		$d->dispatch($req);
+		$resp = $d->dispatch($req);
 		$expected = array('status' => 'FAIL', 'type' => 'Zita\\DispatcherException', 'errno' => \Zita\DISPATCHER_EXCEPTION_BASE + \Zita\DISPATCHER_ERROR_INVALID_SERVICE_NAME, 'msg' => 'Invalid service name');
-		$this->expectOutputString(var_export($expected, true));
+		$this->assertEquals(var_export($expected, true), $resp->body);
 	}
 	
 	public function testInvalidService()
@@ -48,9 +47,9 @@ class DispatcherTest extends PHPUnit_Framework_TestCase
 		$req->params->service = 'InvalidService';
 		$req->params->method = 'hello';
 		$d = new Dispatcher();
-		$d->dispatch($req);
+        $resp = $d->dispatch($req);
 		$expected = array('status' => 'FAIL', 'type' => 'Zita\\DispatcherException', 'errno' => \Zita\DISPATCHER_EXCEPTION_BASE + \Zita\DISPATCHER_ERROR_SERVICE_NOT_FOUND, 'msg' => "Could not find service 'InvalidService'");
-		$this->expectOutputString(var_export($expected, true));
+        $this->assertEquals(var_export($expected, true), $resp->body);
 	}
 	
 	public function testWrongImplementation()
@@ -59,9 +58,9 @@ class DispatcherTest extends PHPUnit_Framework_TestCase
 		$req->params->service = 'DispatcherTestServiceNoImpl';
 		$req->params->methodethod = 'hello';
 		$d = new Dispatcher();
-		$d->dispatch($req);
+        $resp = $d->dispatch($req);
 		$expected = array('status' => 'FAIL', 'type' => 'Zita\\DispatcherException', 'errno' => \Zita\DISPATCHER_EXCEPTION_BASE + \Zita\DISPATCHER_ERROR_SERVICE_IMPL, 'msg' => 'Invalid service implementation.');
-		$this->expectOutputString(var_export($expected, true));
+        $this->assertEquals(var_export($expected, true), $resp->body);
 	}
 		
 	public function testInvalidMethod()
@@ -70,9 +69,9 @@ class DispatcherTest extends PHPUnit_Framework_TestCase
 		$req->params->service = 'DispatcherTestService';
 		$req->params->method = 'hola';
 		$d = new Dispatcher();
-		$d->dispatch($req);
-		$expected = array('status' => 'FAIL', 'type' => 'Zita\\DispatcherException', 'errno' => \Zita\DISPATCHER_EXCEPTION_BASE + \Zita\DISPATCHER_ERROR_METHOD_NOT_FOUND, 'msg' => 'Method not found.');		
-		$this->expectOutputString(var_export($expected, true));
+        $resp = $d->dispatch($req);
+		$expected = array('status' => 'FAIL', 'type' => 'Zita\\DispatcherException', 'errno' => \Zita\DISPATCHER_EXCEPTION_BASE + \Zita\DISPATCHER_ERROR_METHOD_NOT_FOUND, 'msg' => 'Method not found.');
+        $this->assertEquals(var_export($expected, true), $resp->body);
 	}
 	
 	public function testMethodAccessViolation()
@@ -81,9 +80,9 @@ class DispatcherTest extends PHPUnit_Framework_TestCase
 		$req->params->service = 'DispatcherTestService';
 		$req->params->method = 'secret';
 		$d = new Dispatcher();
-		$d->dispatch($req);
+        $resp = $d->dispatch($req);
 		$expected = array('status' => 'FAIL', 'type' => 'Zita\\DispatcherException', 'errno' => \Zita\DISPATCHER_EXCEPTION_BASE + \Zita\DISPATCHER_ERROR_METHOD_ACCESS, 'msg' => 'Method not accessible.');
-		$this->expectOutputString(var_export($expected, true));
+        $this->assertEquals(var_export($expected, true), $resp->body);
 	}
 	
 	public function testMissingParam()
@@ -92,9 +91,9 @@ class DispatcherTest extends PHPUnit_Framework_TestCase
 		$req->params->service = 'DispatcherTestService';
 		$req->params->method = 'hello';
 		$d = new Dispatcher();
-		$d->dispatch($req);
+        $resp = $d->dispatch($req);
 		$expected = array('status' => 'FAIL', 'type' => 'Zita\\DispatcherException', 'errno' => \Zita\DISPATCHER_EXCEPTION_BASE + \Zita\DISPATCHER_ERROR_METHOD_PARAM, 'msg' => 'Missing parameters.');
-		$this->expectOutputString(var_export($expected, true));
+        $this->assertEquals(var_export($expected, true), $resp->body);
 	}
 
 	public function testNormal()

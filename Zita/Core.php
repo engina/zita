@@ -106,15 +106,16 @@ class Core
 		}
 		return null;
 	}
-	
-	/**
-	 * Variable argument function, joins each parameter with the platform specific DIRECTORY_SEPARATOR.
-	 * <code>
-	 * $str = Core::path('foo', 'bar', 'faz', 'baz'); // On Windows: 'foo\bar\faz\baz' On other platforms: 'foo/bar/faz/baz'
-	 * </code>
-	 * @param args variable argument list
-	 * @return joined path of arguments
-	 */
+
+    /**
+     * Variable argument function, joins each parameter with the platform specific DIRECTORY_SEPARATOR.
+     * <code>
+     * $str = Core::path('foo', 'bar', 'faz', 'baz'); // On Windows: 'foo\bar\faz\baz' On other platforms: 'foo/bar/faz/baz'
+     * </code>
+     * @param variable $args
+     * @internal param \Zita\variable $args argument list
+     * @return joined path of arguments
+     */
 	public static function path($args)
 	{
 		$num = func_num_args();
@@ -147,11 +148,6 @@ class Core
 		if($path === null)
 			throw new ClassNotFoundException("Could not load class '$class'");
 		return $path;
-	}
-	
-	public static function normalize($name)
-	{
-		return ucfirst(strtolower($name));
 	}
 }
 

@@ -4,10 +4,10 @@ namespace Zita;
 const DISPATCHER_ERROR_INVALID_SERVICE_NAME = 0;
 const DISPATCHER_ERROR_SERVICE_NOT_FOUND    = 1;
 const DISPATCHER_ERROR_SERVICE_IMPL         = 2;
-const DISPATCHER_ERROR_METHOD_NOT_FOUND        = 3;
-const DISPATCHER_ERROR_METHOD_PARAM            = 4;
-const DISPATCHER_ERROR_METHOD_ACCESS           = 5;
-const DISPATCHER_ERROR_ANNOTATION_IMPL         = 6;
+const DISPATCHER_ERROR_METHOD_NOT_FOUND     = 3;
+const DISPATCHER_ERROR_METHOD_PARAM         = 4;
+const DISPATCHER_ERROR_METHOD_ACCESS        = 5;
+const DISPATCHER_ERROR_ANNOTATION_IMPL      = 6;
  
 /**
  * Dispatcher class is responsible for orchestrating the workflow.
@@ -86,7 +86,7 @@ class Dispatcher
 	 */
 	public function dispatch(Request $req = null)
 	{
-		$RESPONSE = array();
+		$resp = new Response();
 		try
 		{
 			$flush = false;
@@ -96,7 +96,7 @@ class Dispatcher
 				$flush = true;
 			}
 			
-			if($this->pluginContainer->preProcess($req, new Response()) === true)
+			if($this->pluginContainer->preProcess($req, $resp) === true)
 				goto respond;
 			
 			if($req->method == 'OPTIONS')
@@ -150,7 +150,7 @@ class Dispatcher
 			// annotations
 			$annotations = Reflector::getMergedMethodAnnotation($classPath, $m);
 			
-			$service = new $classPath($req);
+			$service = new $classPath($req, $resp);
 			
 			foreach($annotations as $annotation => $params)
 			{
@@ -158,8 +158,8 @@ class Dispatcher
 				$classPath = Core::load($annotation);
 				$annotation = new $classPath($params);
 				if(!($annotation instanceof IAnnotation))
-					throw new DispatcherException("Annotation class does not implement IAnnotation interface", DISPATCHER_ERROR_ANNOTATION_IMPL);
-				$annotation->preProcess($req, new Response(), $service, $m);
+					throw new DispatcherException("Annotation class does not implement IAnnotation interface.", DISPATCHER_ERROR_ANNOTATION_IMPL);
+				$annotation->preProcess($req, $resp, $service, $m);
 			}
 			
 			$paramList = array();
@@ -171,26 +171,22 @@ class Dispatcher
 				array_push($paramList, $req->params->__get($param->name));
 			}
 			
-			$RESPONSE = $method->invokeArgs($service, $paramList);
-			
+			$method->invokeArgs($service, $paramList);
+
 			foreach($annotations as $annotation => $params)
 			{
 				$annotation .= 'Annotation';
 				$classPath = Core::load($annotation);
 				$annotation = new $classPath($params);
-				$annotation->postProcess($req, $RESPONSE, $service, $m);
+				$annotation->postProcess($req, $resp, $service, $m);
 			}
 			
-			$this->pluginContainer->postProcess($req, $RESPONSE);
-			
-			// Allow simple methods to just return text
-			if(!($RESPONSE instanceof \Zita\Response))
-				$RESPONSE = new Response($RESPONSE);
+			$this->pluginContainer->postProcess($req, $resp);
 		}
 		catch(\Exception $e)
 		{
 			// $RESPONSE = array('errno' => $e->getCode(), 'msg' => $e->getMessage());
-			$RESPONSE = new Response(array('status' => 'FAIL', 'type' => get_class($e), 'errno' => $e->getCode(), 'msg' => $e->getMessage()));
+			$resp = new Response(array('status' => 'FAIL', 'type' => get_class($e), 'errno' => $e->getCode(), 'msg' => $e->getMessage()));
 		}
 
 		respond:
@@ -207,20 +203,18 @@ class Dispatcher
 		);
 		
 		// Let controller defined headers override defaults
-		$headers = array_merge($headers, $RESPONSE->headers);
+		$resp->headers = array_merge($headers, $resp->headers);
 		
-		$RESPONSE->headers = $headers;
-		
-		if(!is_string($RESPONSE->body))
-			$RESPONSE->body = var_export($RESPONSE->body);
+		if(!is_string($resp->body))
+			$resp->body = var_export($resp->body, true);
 
 		// If a hand crafted Request is given, we don't flush the output, instead we just return.
-		if(!$flush) return $RESPONSE;
+		if(!$flush) return $resp;
 
-		header('HTTP/1.1 '.$RESPONSE->status);
-		foreach($headers as $key => $value)
+		header('HTTP/1.1 '.$resp->status);
+		foreach($resp->headers as $key => $value)
 			header($key.': '.$value);
-		echo $RESPONSE->body;
+		echo $resp->body;
 	}
 }
 

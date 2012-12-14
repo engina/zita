@@ -5,7 +5,7 @@ namespace Zita;
  */
 abstract class OutputPlugin extends Plugin
 {
-	public function preProcess(Request $req)
+	public function preProcess(Request $req, Response $resp)
 	{
 	}
 }

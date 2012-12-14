@@ -53,7 +53,7 @@ namespace // Global
 		
 	}
 	
-	require_once('api/0.1/zita/Zita/Core.php');
+	require_once('Zita/Core.php');
 	
 	use Zita\Core;
 	
@@ -116,5 +116,19 @@ namespace // Global
 			Core::removeServicePath($this->dummyPath);
 			$this->assertFalse(array_search($this->dummyPath, Core::getServicePaths()));
 		}
+
+        public function testErrors()
+        {
+            $this->assertCount(0, Core::getErrors());
+            Core::logError(new Exception("Test"), 100);
+            $this->assertCount(1, Core::getErrors());
+            $errors = Core::getErrors();
+            $this->assertEquals('CoreTest', $errors[0]['source']);
+            $this->assertEquals('testErrors', $errors[0]['method']);
+            $this->assertEquals(123, $errors[0]['line']);
+            $this->assertEquals('\Exception', $errors[0]['type']);
+            $this->assertEquals('Test', $errors[0]['msg']);
+            $this->assertEquals(100, $errors[0]['code']);
+        }
 	}
 }

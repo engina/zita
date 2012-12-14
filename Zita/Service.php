@@ -4,10 +4,11 @@ namespace Zita;
 class Service
 {
 	protected $request;
-	
-	public function __construct(Request $req)
+	protected $response;
+	public function __construct(Request $req, Response $resp)
 	{
 		$this->request  = $req;
+        $this->response = $resp;
 	}
 }
 
