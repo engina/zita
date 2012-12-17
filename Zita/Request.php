@@ -47,6 +47,8 @@ class Request
 	public $server  = array();
 	public $method  = array();
 	public $headers = array();
+    public $handled = false;
+    public $body    = '';
 	
 	/**
 	 * Authenticated IUser.

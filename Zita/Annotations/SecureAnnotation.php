@@ -5,6 +5,7 @@ use Zita\IAnnotation;
 use Zita\Request;
 use Zita\Response;
 use Zita\Service;
+use Zita\Dispatcher;
 
 class SecureAnnotation implements IAnnotation
 {
@@ -13,12 +14,17 @@ class SecureAnnotation implements IAnnotation
 		
 	}
 
-	public function preProcess (Request $req, Response $resp, Service $service = null, $method = null)
+	public function preProcess (Request $req, Response $resp, Dispatcher $dispatcher, Service $service, $method)
 	{
-		throw new \Exception("Authentication is required.", 101);
+        if($req->params->access != null)
+        {
+            $provider = $dispatcher->getSessionProvider();
+            $session  = $provider->load($req->params->access);
+            $req->user = $session->user;
+        }
 	}
 
-	public function postProcess (Request $req, Response $resp, Service $service = null, $method = null)
+	public function postProcess (Request $req, Response $resp, Dispatcher $dispatcher, Service $service, $method)
 	{
 		
 	}

@@ -2,19 +2,20 @@
 namespace Zita\Security;
 
 use \Zita\Response;
-use \Zita\Controller;
+use \Zita\Service;
+use \Zita\ISessionProvider;
 
-abstract class SessionController extends Controller
+abstract class AuthServiceBase extends Service
 {
 	private $authenticatorsDict = array();
-	
+
 	protected function addAuthenticator(IAuthenticator $auth, $name = null)
 	{
 		$authenticatorsName = $name == null ? get_class($auth) : $name;
 		$this->authenticatorsDict[$authenticatorsName] = $auth;
 	}
 	
-	public function login($authenticator, $data)
+	public function auth($authenticator, $data)
 	{
 		if(!isset($this->authenticatorsDict[$authenticator]))
 			throw new \Exception("Invalid authenticator '$authenticator'");
@@ -22,16 +23,14 @@ abstract class SessionController extends Controller
 		$user = $this->authenticatorsDict[$authenticator]->authenticate($data);
 		if($user == null)
 			throw new \Exception("Not authorized");
-		return new Response(array("status" => "ok"));
+
+        $session = $this->dispatcher->getSessionProvider()->create();
+        $session->user = $user;
+		$this->response->body = (array("status" => "OK", "access" => $session->getSID()));
 	}
 	
-	public function authmethods()
+	public function authMethods()
 	{
-		return new Response(array_keys($this->authenticatorsDict));
+		$this->response->body = array_keys($this->authenticatorsDict);
 	}
-	
-	public function create()
-	{
-		
-	}	
 }

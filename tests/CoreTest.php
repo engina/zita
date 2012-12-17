@@ -70,9 +70,6 @@ namespace // Global
 			$this->assertEquals("\\TestNS1\\SubA\D", Core::load("SubA\\D"));
 			$this->assertEquals("\\TestNS2\\SubB\D", Core::load("SubB\\D"));
 			$this->assertEquals("\\TestNS2\\C", Core::load("C"));
-			$this->assertFalse(class_exists('JsonOutput', false));
-			$this->assertEquals("\\Zita\\Filters\\JsonOutput", Core::load("Zita\\Filters\\JsonOutput"));
-			$this->assertEquals("\\Zita\\Filters\\JsonOutput", Core::load("Zita\\Filters\\JsonOutput"));
 		}
 		
 		/**
@@ -96,27 +93,7 @@ namespace // Global
 			Core::addIncludePath('test');
 			$this->assertEquals('test'.PATH_SEPARATOR.$path, get_include_path());
 		}
-
-		private $dummyPath = 'test/Add/Service/path';
-		
-		public function testAddServicePath()
-		{
-			$this->assertFalse(Core::removeServicePath($this->dummyPath));
-			$this->assertFalse(array_search($this->dummyPath, Core::getServicePaths()));
-			Core::addServicePath($this->dummyPath);
-			$this->assertEquals(0, array_search($this->dummyPath, Core::getServicePaths()));
-		}
-		
-		/**
-		 * @depends testAddServicePath
-		 */
-		public function testRemoveServicePath()
-		{
-			$this->assertEquals(0, array_search($this->dummyPath, Core::getServicePaths()));
-			Core::removeServicePath($this->dummyPath);
-			$this->assertFalse(array_search($this->dummyPath, Core::getServicePaths()));
-		}
-
+/*
         public function testErrors()
         {
             $this->assertCount(0, Core::getErrors());
@@ -130,5 +107,6 @@ namespace // Global
             $this->assertEquals('Test', $errors[0]['msg']);
             $this->assertEquals(100, $errors[0]['code']);
         }
+*/
 	}
 }

@@ -1,7 +1,7 @@
 <?php
 namespace Zita\Security;
 
-interface IUser
+interface IUser extends \Serializable
 {
 	public static function getByIdentifier($id);
 	public function getIdentifier();

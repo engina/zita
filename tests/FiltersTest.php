@@ -2,69 +2,74 @@
 require_once('Zita/Core.php');
 
 use \Zita\Dispatcher;
-use \Zita\PluginContainer;
-use \Zita\Plugin;
 use \Zita\Request;
 use \Zita\Response;
 use \Zita\Service;
 use \Zita\Core;
+use \Zita\IFilter;
 
-class FilterA extends Plugin
+class AFilter implements IFilter
 {
-	public function preProcess(Request $req, Response $resp)
-	{
-	} 
-	
-	public function postProcess(Request $req, Response $resp)
-	{
-		$resp->body .= 'a';
-	}
+    public function __construct($param)
+    {
+
+    }
+
+    public function preProcess (Request $req, Response $resp, Dispatcher $dispatcher, Service $service, $method)
+    {
+
+    }
+
+    public function postProcess (Request $req, Response $resp, Dispatcher $dispatcher, Service $service, $method)
+    {
+        $resp->body .= 'a';
+    }
 }
 
-class FilterB extends Plugin
+class BFilter implements IFilter
 {
-	public function preProcess(Request $req, Response $resp)
-	{
-	}  
-	
-	public function postProcess(Request $req, Response $resp)
-	{
-		$resp->body .= 'b';
-	}
+    public function __construct($param)
+    {
+
+    }
+
+    public function preProcess (Request $req, Response $resp, Dispatcher $dispatcher, Service $service, $method)
+    {
+
+    }
+
+    public function postProcess (Request $req, Response $resp, Dispatcher $dispatcher, Service $service, $method)
+    {
+        $resp->body .= 'b';
+    }
 }
 
-class FilterC extends Plugin
+class CFilter implements IFilter
 {
-	public function preProcess(Request $req, Response $rest)
-	{
-	} 
-	
-	public function postProcess(Request $req, Response $resp)
-	{
-		$resp->body .= 'c';
-	}
-}
+    public function __construct($param)
+    {
 
-class FilterCancel extends Plugin
-{
-	public function preProcess(Request $req, Response $resp)
-	{
-	}  
-	
-	public function postProcess(Request $req, Response $resp)
-	{
-		return false;
-	}
+    }
+
+    public function preProcess (Request $req, Response $resp, Dispatcher $dispatcher, Service $service, $method)
+    {
+
+    }
+
+    public function postProcess (Request $req, Response $resp, Dispatcher $dispatcher, Service $service, $method)
+    {
+        $resp->body .= 'c';
+    }
 }
 
 class ComplexFilterTestService extends Service
 {
 	/**
-	 * @Filter FilterA|FilterA|FilterB|FilterC|\Zita\Filters\JsonOutput
+	 * @Filter A|A|B|C
 	 */
 	public function hello($name)
 	{
-		$this->respons->body = "Hello $name";
+		$this->response->body = "Hello $name";
 	}	
 }
 
@@ -75,10 +80,10 @@ class FiltersTest extends PHPUnit_Framework_TestCase
 		$req  = new Request();
 		$d    = new Dispatcher();
 		$name = 'John';
-		$req->params->service = 'ComplexFilterTestService';
+		$req->params->service = 'ComplexFilterTest';
 		$req->params->method  = 'hello';
 		$req->params->name    = $name;
 		$resp = $d->dispatch($req);
-		$this->assertEquals(json_encode("Hello $name".'a'.'a'.'b'.'c'), $resp->body);
+		$this->assertEquals("Hello $name".'a'.'a'.'b'.'c', $resp->body);
 	}
 }

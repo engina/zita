@@ -1,14 +1,20 @@
 <?php
 namespace Zita;
 
+/**
+ * @Secure
+ */
 class Service
 {
 	protected $request;
 	protected $response;
-	public function __construct(Request $req, Response $resp)
+    protected $dispatcher;
+
+	public function __construct(Request $req, Response $resp, Dispatcher $dispatcher)
 	{
-		$this->request  = $req;
-        $this->response = $resp;
+		$this->request    = $req;
+        $this->response   = $resp;
+        $this->dispatcher = $dispatcher;
 	}
 }
 

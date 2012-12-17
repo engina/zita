@@ -7,7 +7,6 @@ class Response
 	const FAIL = 'FAIL';
 	
 	public $status;
-	public $response;
 	public $body;
 	public $headers;
 	

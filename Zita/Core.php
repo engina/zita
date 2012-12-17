@@ -9,7 +9,6 @@ define('PS', PATH_SEPARATOR);
 define('ZITA_ROOT', dirname(dirname(__FILE__)));
 define('APP_ROOT', str_replace('/', DS, dirname($_SERVER['SCRIPT_FILENAME'])));
 
-Core::addServicePath(Core::path(APP_ROOT, 'Controllers'));
 Core::addIncludePath(ZITA_ROOT);
 Core::addIncludePath(Core::path(ZITA_ROOT, 'Zita'));
 Core::addIncludePath(Core::path(ZITA_ROOT, 'Zita', 'Annotations'));
@@ -40,28 +39,6 @@ function classloader($class, $paths = null)
 
 class Core
 {
-	private static $SERVICE_PATHS;
-	
-	public static function addServicePath($path)
-	{
-		self::$SERVICE_PATHS = $path.PS.self::$SERVICE_PATHS;
-	}
-	
-	public static function removeServicePath($path)
-	{
-		$paths = self::getServicePaths();
-		$key   = array_search($path, $paths);
-		if($key === false) return false;
-		unset($paths[$key]);
-		self::$SERVICE_PATHS = implode(PS, $paths);
-		return true;
-	}
-	
-	public static function getServicePaths()
-	{
-		return explode(PS, self::$SERVICE_PATHS);
-	}
-	
 	public static function addIncludePath($path)
 	{
 		set_include_path($path.PS.get_include_path());
