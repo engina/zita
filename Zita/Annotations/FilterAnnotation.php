@@ -16,7 +16,14 @@ class FilterAnnotation implements IAnnotation
 	public function __construct($cfg)
 	{
 		$this->cfg = $cfg;
-		$this->filters = explode('|', $cfg);
+        $this->filters = array();
+        if($cfg == null) return;
+        $filters = explode('|', $cfg);
+        foreach($filters as $filter)
+        {
+            if(empty($filter)) continue;
+            $this->filters[] = $filter;
+        }
 	}
 
     protected function getFilters()

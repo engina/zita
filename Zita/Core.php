@@ -126,6 +126,46 @@ class Core
 			throw new ClassNotFoundException("Could not load class '$class'");
 		return $path;
 	}
+
+    /**
+     * Parses a multi parameter string into associative array form.
+     *
+     * You can use Core::parseParams() to parse "param1=value1; param2 = some value; foo" like parameters.
+     * This would return array('param1' => 'value', 'param2' => 'some value', 'foo')
+     *
+     * = and ; has special meaning but anything other than can be used.
+     *
+     * Both parameter keys and values will be trimmed, meaning trailing and preceding white spaces will be removed.
+     * Though whitespaces in values are allowed, as seen in the above example.
+     *
+     * Parameters without values are also allowed as seen in the example again.
+     *
+     * @param string $params
+     * @return array associative array of parsed parameter key, values
+     */
+    public static function parseParams($params)
+    {
+        // Multi value annotation
+        $values = explode(';', $params);
+        $value = array();
+        foreach($values as $v)
+        {
+            $v = trim($v);
+            if(strpos($v, '=') !== false)
+            {
+                // Key value pair
+                list($value_key, $value_value) = explode('=', $v);
+                $value[trim($value_key)] = trim($value_value);
+            }
+            else
+            {
+                // Just a key
+                if(!empty($v))
+                    array_push($value, $v);
+            }
+        }
+        return $value;
+    }
 }
 
 ?>

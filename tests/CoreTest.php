@@ -93,6 +93,16 @@ namespace // Global
 			Core::addIncludePath('test');
 			$this->assertEquals('test'.PATH_SEPARATOR.$path, get_include_path());
 		}
+
+        public function testParseParams()
+        {
+            $params = "foo=bar; bar = john doe ;baz;;;;";
+            $actual = Core::parseParams($params);
+            $expected = array('foo' => 'bar',
+                              'bar' => 'john doe',
+                              'baz',);
+            $this->assertEquals($expected, $actual);
+        }
 /*
         public function testErrors()
         {

@@ -7,4 +7,5 @@ interface IUser extends \Serializable
 	public function getIdentifier();
 	public function getPassword();
 	public function getRoles();
+    public function hasRole($role);
 }

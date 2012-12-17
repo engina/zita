@@ -233,7 +233,7 @@ class Dispatcher
 
         // Everything came to this! We are about to flush the data. If it is not printable, make it so.
 		if(!is_string($resp->body))
-			$resp->body = var_export($resp->body, true);
+			$resp->body = json_encode($resp->body);
 
 		header('HTTP/1.1 '.$resp->status);
 		foreach($resp->headers as $key => $value)

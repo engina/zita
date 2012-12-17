@@ -46,6 +46,8 @@ class TestAnnotation implements IAnnotation
 
 /**
  * @Test prev,post
+ * Disable default output filter AutoFormatFilter as it will try to re-encode this.
+ * @OutputFilter
  */
 class AnnotationsTestService extends Service
 {

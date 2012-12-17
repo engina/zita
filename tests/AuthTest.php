@@ -67,6 +67,19 @@ class MyUser implements IUser
         $data = unserialize($serialized);
         $this->__construct($data['id'], '', $data['roles']);
     }
+
+    /**
+     * This can be used for complex validations.
+     *
+     * Maybe you are using a database schema which allows a single role storage for a single user, such as ENUM fields.
+     *
+     * Then you can use this hasRole method to implement role hierarchies. Such as, hasRole('User') can return true
+     * for role Admin.
+     */
+    public function hasRole($role)
+    {
+        return in_array($role, $this->getRoles());
+    }
 }
 
 class MyAuthenticator implements IAuthenticator
@@ -74,7 +87,7 @@ class MyAuthenticator implements IAuthenticator
     private $users;
     public function __construct()
     {
-        $this->users = array(array('id' => 'john', 'password' => 'mysecret', 'roles' => array('ADMIN', 'MODERATOR', 'USER')));
+        $this->users = array(array('id' => 'john', 'password' => 'mysecret', 'roles' => array('MODERATOR', 'USER')));
     }
 
     /**
@@ -108,11 +121,32 @@ class AuthTestService extends Zita\Security\AuthServiceBase
     }
 }
 
+/*
+ * \Zita\Service already has an @Secure annotation which just enables authentication mechanisms for all services
+ * unless "@Secure off" is provided in the derived services.
+ *
+ * Authentication service, which is enabled by default, processes $this->request->params->access and gets user associated with it
+ * and places it in $this->request->user which is an IUser object.
+ *
+ * If $this->request->user is null, the user is not using an access point hence it is an anonymous access.
+ */
 class SecureService extends \Zita\Service
 {
+    /**
+     * Allows any authenticated user.
+     * @Secure allow anonymous
+     */
     public function hello()
     {
         $this->response->body .= 'Hello '.$this->request->user->getIdentifier();
+    }
+
+    /**
+     * @Secure allow role MODERATOR and USER but deny
+     */
+    public function allowAd()
+    {
+
     }
 }
 
@@ -125,7 +159,7 @@ class AuthTest extends PHPUnit_Framework_TestCase
         $req->params->service = 'AuthTest';
         $req->params->method  = 'authmethods';
         $resp = $d->dispatch($req);
-        $expected = array('MyAuthenticator');
+        $expected = json_encode(array('MyAuthenticator'));
         $this->assertEquals($expected, $resp->body);
     }
 
@@ -142,20 +176,22 @@ class AuthTest extends PHPUnit_Framework_TestCase
                           'type'   => 'Zita\Security\CouldNotAuthenticateException',
                           'errno'  => 3000,
                           'msg'    => 'Could not authenticate.');
-        $this->assertEquals($expected, $resp->body);
+        $this->assertEquals(json_encode($expected), $resp->body);
     }
 
     public function testAuth()
     {
         $d = new Dispatcher();
         $sessionPath = Core::path(dirname(__FILE__), 'tmp', 'sessions');
-        mkdir($sessionPath, 777, true);
+        if(!is_dir($sessionPath))
+            mkdir($sessionPath, 777, true);
         $d->getSessionProvider()->setPath($sessionPath);
         $req = new Request();
         $req->params->service = 'AuthTest';
         $req->params->method  = 'auth';
         $req->params->authenticator = 'MyAuthenticator';
         $req->params->data    = array('identifier' => 'john', 'password' => 'mysecret');
+        $req->params->type    = 'raw';
         $resp = $d->dispatch($req);
         $resp->body = new \Zita\ArrayWrapper($resp->body);
         $this->assertEquals('OK', $resp->body->status);
@@ -168,6 +204,6 @@ class AuthTest extends PHPUnit_Framework_TestCase
         $req->params->method  = 'hello';
         $req->params->access  = $access;
         $resp = $d->dispatch($req);
-        $this->assertEquals('Hello john', $resp->body);
+        $this->assertEquals(json_encode('Hello john'), $resp->body);
     }
 }

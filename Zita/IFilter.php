@@ -2,9 +2,10 @@
 namespace Zita;
 
 /**
- * User: Engin
- * Date: 16.12.2012
- * Time: 16:27
+ * All the filters to be used in @Filter, @OutputFilter, @InputFilter should derive from this class or utulity classes
+ * OutputFilter or InputFilter.
+ *
+ * Derived classes' names should end with Filter, such as HTMLMinifyFilter.
  */
 interface IFilter extends  IAnnotation
 {

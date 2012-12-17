@@ -2,7 +2,8 @@
 namespace Zita;
 
 /**
- * @Secure
+ * @Secure allow anonymous
+ * @OutputFilter AutoFormat
  */
 class Service
 {

@@ -13,15 +13,21 @@ namespace Zita;
 interface IAnnotation
 {
 	/**
-	 * Annotations can accept parameters
+	 * Annotations can accept parameters.
+     *
+     * Parameters are free form, you can do whatever you like with them
 	 * \@Foo param
-	 * These will be fed to Annotation implementation
-	 * @param unknown_type $paramString
+	 * These will be fed to Annotation implementation's constructor.
+     *
+     * You can use Core::parseParams() to parse "param1=value1; param2 = some value; foo" like parameters.
+     *
+     * @see   Core::parseParams()
+	 * @param $string $paramString
 	 */
 	public function __construct($paramString);
 	
 	/**
-	 * Run just before controller->method is going to be invoked.
+	 * Run just before service->method is going to be invoked.
      *
      * Can throw an exception which will practically stop any remaining pre-annotations to be procesed and
      * service invokation to be skipped. Annotation post-processing will be done however. This is to allow output
@@ -43,7 +49,7 @@ interface IAnnotation
 	public function preProcess (Request $req, Response $resp, Dispatcher $dispatcher, Service $service, $method);
 	
 	/**
-	 * Ran after the controller->method has been invoked
+	 * Ran after the service->method has been invoked
      *
      * No exceptions should be thrown in post processing.
      *
