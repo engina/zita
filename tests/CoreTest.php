@@ -103,6 +103,14 @@ namespace // Global
                               'baz',);
             $this->assertEquals($expected, $actual);
         }
+
+        public function testCrypt()
+        {
+            $key = "this is some secret key";
+            $txt = "this is the data to be encrypted and decrypted";
+            $enc = Zita\Security\Security::encrypt($txt, $key);
+            $this->assertEquals($txt, Zita\Security\Security::decryptText($enc, $key));
+        }
 /*
         public function testErrors()
         {

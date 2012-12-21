@@ -3,6 +3,11 @@ namespace Zita;
 
 class Reflector
 {
+    /**
+     * Annotations which are supposed to be ignored.
+     */
+    public static $IGNORED_ANNOTATIONS = array('return', 'param', 'throws');
+
 	protected static function parseAnnotation($doccomment)
 	{
 		$result = array();
@@ -30,6 +35,7 @@ class Reflector
 			$key = trim(substr($line, 1, $valueStart));
 			$value = trim(substr($line, $valueStart));
 			push:
+            if(in_array($key, self::$IGNORED_ANNOTATIONS)) continue;
 			$result[$key] = $value;
 		}
 		return $result;
@@ -103,7 +109,7 @@ class Reflector
 	public static function getMethodAnnotation($class, $method, $inherit = true)
 	{
         $class = new \ReflectionClass($class);
-		$ca = self::_getClassAnnotation($class, $inherit);
+		$ca = self::_getClassAnnotation($class, false);
 		$ma = self::_getMethodAnnotation($class, $method);
 		$annotations = array_merge($ca, $ma);
         if(!$inherit)

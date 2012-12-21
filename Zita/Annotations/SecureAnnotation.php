@@ -33,10 +33,10 @@ class SecureAnnotation implements IAnnotation
 
 	public function preProcess (Request $req, Response $resp, Dispatcher $dispatcher, Service $service, $method)
 	{
-        if($req->params->access != null)
+        if($req->params->auth != null)
         {
             $provider = $dispatcher->getSessionProvider();
-            $session  = $provider->load($req->params->access);
+            $session  = $provider->load($req->params->auth);
             $req->user = $session->user;
         }
 	}

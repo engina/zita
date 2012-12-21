@@ -37,59 +37,6 @@ class Dispatcher
     {
         return $this->sessionProvider;
     }
-	/**
-	 * Discovers the available controllers to build API definition.
-	 * @return \Zita\Response
-	 */
-	public function discover()
-	{
-		$before = get_declared_classes();
-		$files = scandir($this->controllersDir);
-		foreach($files as $file)
-		{
-			if(strtolower(substr($file, -4)) != '.php')
-				continue;
-			include $this->controllersDir.DIRECTORY_SEPARATOR.$file;
-		}
-		$after = get_declared_classes();
-		$classes = array_diff($after, $before);
-		
-		$result = array();
-		foreach($classes as $class)
-		{
-			$r = new \ReflectionClass($class);
-			if(!$r->isSubclassOf('\Zita\Service'))
-				continue;
-			$m = array();
-			$methods = $r->getMethods(\ReflectionMethod::IS_PUBLIC);
-			foreach($methods as $method)
-			{
-				if($method->isConstructor()) continue;
-				
-				$parameters = array();
-				foreach($method->getParameters() as $parameter)
-				{
-					$param_info = array();
-					$param_info['optional'] = false;
-					if($parameter->isDefaultValueAvailable())
-					{
-						$param_info['default'] = $parameter->getDefaultValue();
-						$param_info['optional'] = true;
-					}
-					$type = $parameter->getClass();
-					if($type == null)
-						$type = 'String'; 
-					$param_info['type'] = $type;
-					$parameters[$parameter->getName()] = $param_info;
-				}
-				$m[$method->getName()] = array('parameters' => $parameters);
-			}
-
-			if(count($m) == 0) continue;
-			$result[$r->getShortName()] = $m;
-		}
-		return new Response($result);
-	}
 	
 	/**
 	 * 
@@ -182,7 +129,7 @@ class Dispatcher
                     foreach($params as $p => $param)
                     {
                         if($req->params->__get($param->name) == null && !$param->isOptional())
-                            throw new DispatcherException('Missing parameters.', DISPATCHER_ERROR_METHOD_PARAM);
+                            throw new DispatcherException('Missing parameter: '.$param->name, DISPATCHER_ERROR_METHOD_PARAM);
                         array_push($paramList, $req->params->__get($param->name));
                     }
 

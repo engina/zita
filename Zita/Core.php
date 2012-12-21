@@ -1,7 +1,7 @@
 <?php
 namespace Zita;
 
-// require('Debug.php');
+require('Debug.php');
 
 define('DS', DIRECTORY_SEPARATOR);
 define('PS', PATH_SEPARATOR);
@@ -39,6 +39,11 @@ function classloader($class, $paths = null)
 
 class Core
 {
+    public static function getIncludePaths()
+    {
+        return explode(PS, get_include_path());
+    }
+
 	public static function addIncludePath($path)
 	{
 		set_include_path($path.PS.get_include_path());

@@ -6,7 +6,8 @@ use Zita\Dispatcher;
 use Zita\Request;
 use Zita\Response;
 use Zita\Security\IUser;
-use Zita\Security\IAuthenticator;
+use Zita\Security\IUserProvider;
+use Zita\Security\GenericAuthenticator;
 use Zita\Security\CouldNotAuthenticateException;
 
 class MyUser implements IUser
@@ -22,19 +23,9 @@ class MyUser implements IUser
         $this->roles = $roles;
     }
 
-    public static function getByIdentifier($id)
-    {
-        return null;
-    }
-
     public function getIdentifier()
     {
         return $this->id;
-    }
-
-    public function getPassword()
-    {
-        return $this->pass;
     }
 
     public function getRoles()
@@ -42,26 +33,11 @@ class MyUser implements IUser
         return $this->roles;
     }
 
-    /**
-     * (PHP 5 &gt;= 5.1.0)<br/>
-     * String representation of object
-     * @link http://php.net/manual/en/serializable.serialize.php
-     * @return string the string representation of the object or null
-     */
     public function serialize()
     {
         return serialize(array('id'=>$this->getIdentifier(), 'roles'=>$this->getRoles()));
     }
 
-    /**
-     * (PHP 5 &gt;= 5.1.0)<br/>
-     * Constructs the object
-     * @link http://php.net/manual/en/serializable.unserialize.php
-     * @param string $serialized <p>
-     * The string representation of the object.
-     * </p>
-     * @return mixed the original value unserialized.
-     */
     public function unserialize($serialized)
     {
         $data = unserialize($serialized);
@@ -80,34 +56,34 @@ class MyUser implements IUser
     {
         return in_array($role, $this->getRoles());
     }
+
+    public function verifyCredentials($data)
+    {
+        return $this->pass === $data['password'];
+    }
 }
 
-class MyAuthenticator implements IAuthenticator
+class MyUserProvider implements IUserProvider
 {
     private $users;
     public function __construct()
     {
-        $this->users = array(array('id' => 'john', 'password' => 'mysecret', 'roles' => array('MODERATOR', 'USER')));
+        $this->users = array(
+                              array('id' => 'john', 'password' => 'mysecret1', 'roles' => array('MODERATOR', 'USER')),
+                              array('id' => 'jane', 'password' => 'mysecret2', 'roles' => array('ADMIN','MODERATOR', 'USER')),
+                              array('id' => 'dave', 'password' => 'mysecret3', 'roles' => array('MODERATOR', 'USER')),
+                              array('id' => 'nate', 'password' => 'mysecret4', 'roles' => array('USER')),
+        );
     }
 
-    /**
-     * @param $object sometimes a username and password, sometimes an authentication token (Facebook)
-     * @return IUser
-     */
-    public function authenticate($data)
+    public function getByIdentifier($id)
     {
-        $u = null;
         foreach($this->users as $user)
         {
-            if($user['id'] == $data['identifier'] && $user['password'] == $data['password'])
-            {
-                $u = $user;
-                break;
-            }
+            if($user['id'] == $id)
+                return new MyUser($id, $user['password'], $user['roles']);
         }
-        if($u == null)
-            throw new CouldNotAuthenticateException();
-        return new MyUser($u['id'], $u['password'], $u['roles']);
+        return null;
     }
 }
 
@@ -117,7 +93,7 @@ class AuthTestService extends Zita\Security\AuthServiceBase
     function __construct(Request $req, Response $resp, \Zita\Dispatcher $dispatcher)
     {
         parent::__construct($req, $resp, $dispatcher);
-        $this->addAuthenticator(new MyAuthenticator());
+        $this->addAuthenticator(new GenericAuthenticator(new MyUserProvider()));
     }
 }
 
@@ -159,7 +135,7 @@ class AuthTest extends PHPUnit_Framework_TestCase
         $req->params->service = 'AuthTest';
         $req->params->method  = 'authmethods';
         $resp = $d->dispatch($req);
-        $expected = json_encode(array('MyAuthenticator'));
+        $expected = json_encode(array('Generic'));
         $this->assertEquals($expected, $resp->body);
     }
 
@@ -169,8 +145,9 @@ class AuthTest extends PHPUnit_Framework_TestCase
         $req = new Request();
         $req->params->service = 'AuthTest';
         $req->params->method  = 'auth';
-        $req->params->authenticator = 'MyAuthenticator';
-        $req->params->data    = array('identifier' => 'john', 'password' => 'invalid_password');
+        $req->params->authenticator = 'Generic';
+        $req->params->identifier    = 'john';
+        $req->params->data    = array('password' => 'invalid_password');
         $resp = $d->dispatch($req);
         $expected = array('status' => 'FAIL',
                           'type'   => 'Zita\Security\CouldNotAuthenticateException',
@@ -187,23 +164,39 @@ class AuthTest extends PHPUnit_Framework_TestCase
             mkdir($sessionPath, 777, true);
         $d->getSessionProvider()->setPath($sessionPath);
         $req = new Request();
-        $req->params->service = 'AuthTest';
-        $req->params->method  = 'auth';
-        $req->params->authenticator = 'MyAuthenticator';
-        $req->params->data    = array('identifier' => 'john', 'password' => 'mysecret');
-        $req->params->type    = 'raw';
+        $req->params->service       = 'AuthTest';
+        $req->params->method        = 'auth';
+        $req->params->authenticator = 'Generic';
+        $req->params->identifier    = 'john';
+        $req->params->data          = array('password' => 'mysecret1');
+        $req->params->remember      = 'true';
+        $req->params->type          = 'raw';
         $resp = $d->dispatch($req);
         $resp->body = new \Zita\ArrayWrapper($resp->body);
         $this->assertEquals('OK', $resp->body->status);
-        $this->assertTrue(strlen($resp->body->access) > 8);
-        $access = $resp->body->access;
+        $this->assertNotEmpty($resp->body->auth);
+        $this->assertNotEmpty($resp->body->remember);
+        $remember = $resp->body->remember;
+        $access   = $resp->body->auth;
 
         // Now another request with the access token we've just acquired and see if the service rememebrs who we are
         $req = new Request();
         $req->params->service = 'Secure';
         $req->params->method  = 'hello';
-        $req->params->access  = $access;
+        $req->params->auth    = $access;
         $resp = $d->dispatch($req);
         $this->assertEquals(json_encode('Hello john'), $resp->body);
+
+        $req = new Request();
+        $req->params->service       = 'AuthTest';
+        $req->params->method        = 'auth';
+        $req->params->authenticator = 'Generic';
+        $req->params->identifier    = 'john';
+        $req->params->data          = array('remember' => $remember);
+        $req->params->type          = 'raw';
+        $resp = $d->dispatch($req);
+        $resp->body = new \Zita\ArrayWrapper($resp->body);
+        $this->assertEquals('OK', $resp->body->status);
+        $this->assertNotEmpty($resp->body->auth);
     }
 }

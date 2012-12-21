@@ -92,7 +92,7 @@ class DispatcherTest extends PHPUnit_Framework_TestCase
 		$req->params->method = 'hello';
 		$d = new Dispatcher();
         $resp = $d->dispatch($req);
-		$expected = array('status' => 'FAIL', 'type' => 'Zita\\DispatcherException', 'errno' => \Zita\DISPATCHER_EXCEPTION_BASE + \Zita\DISPATCHER_ERROR_METHOD_PARAM, 'msg' => 'Missing parameters.');
+		$expected = array('status' => 'FAIL', 'type' => 'Zita\\DispatcherException', 'errno' => \Zita\DISPATCHER_EXCEPTION_BASE + \Zita\DISPATCHER_ERROR_METHOD_PARAM, 'msg' => 'Missing parameter: name');
         $this->assertEquals(json_encode($expected), $resp->body);
 	}
 

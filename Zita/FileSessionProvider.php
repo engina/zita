@@ -18,6 +18,11 @@ class FileSessionProvider implements  ISessionProvider
         $this->setWindow($window);
     }
 
+    public function __destruct()
+    {
+        $this->cleanup();
+    }
+
     public function setPath($path)
     {
         $this->path = $path;

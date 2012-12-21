@@ -4,10 +4,12 @@ namespace Zita\Security;
 interface IAuthenticator
 {
 	/**
-	 * @param $object sometimes a username and password, sometimes an authentication token (Facebook)
-	 * @return IUser 
+     * @throws Zita\Security\CouldNotAuthenticateException
+	 * @param $id   User's idenfitifer
+     * @param $data Additional information, might be a password or information for a public key authentication scheme.
+	 * @return IUser or throw exception CouldNotAuthenticateException.
 	 */
-	public function authenticate($object);
+	public function authenticate($id, $data);
 }
 
 ?>
