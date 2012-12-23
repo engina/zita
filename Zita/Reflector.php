@@ -182,7 +182,7 @@ class Reflector
      * @return array
      * @throws ReflectionException
      */
-    public static function invokeArgs(\ReflectionMethod $method, $params, $ignoreSuperflous = false)
+    public static function invokeArgs(\ReflectionMethod $method, $params, $ignoreSuperfluous = false)
     {
         if(!is_array($params))
             $params = array($params);
@@ -208,8 +208,8 @@ class Reflector
             array_push($paramList, $params[$param->name]);
             unset($params[$param->name]);
         }
-        if(!$ignoreSuperflous && count($params) > 0)
-            throw new ReflectionException('There are superflous parameters: '.implode(', ', array_keys($params)));
+        if(!$ignoreSuperfluous && count($params) > 0)
+            throw new ReflectionException($method->class.'::'.$method->name.'() has some superfluous parameters: '.implode(', ', array_keys($params)));
         return $paramList;
     }
 }

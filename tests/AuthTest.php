@@ -69,10 +69,10 @@ class MyUserProvider implements IUserProvider
     public function __construct()
     {
         $this->users = array(
-                              array('id' => 'john', 'password' => 'mysecret1', 'roles' => array('MODERATOR', 'USER')),
-                              array('id' => 'jane', 'password' => 'mysecret2', 'roles' => array('ADMIN','MODERATOR', 'USER')),
-                              array('id' => 'dave', 'password' => 'mysecret3', 'roles' => array('MODERATOR', 'USER')),
-                              array('id' => 'nate', 'password' => 'mysecret4', 'roles' => array('USER')),
+                              array('id' => 'john', 'password' => 'mysecret1', 'roles' => array('moderator', 'user')),
+                              array('id' => 'jane', 'password' => 'mysecret2', 'roles' => array('admin','moderator', 'user')),
+                              array('id' => 'dave', 'password' => 'mysecret3', 'roles' => array('moderator', 'user')),
+                              array('id' => 'nate', 'password' => 'mysecret4', 'roles' => array('user')),
         );
     }
 
@@ -89,7 +89,6 @@ class MyUserProvider implements IUserProvider
 
 class AuthTestService extends Zita\Security\AuthServiceBase
 {
-
     function __construct(Request $req, Response $resp, \Zita\Dispatcher $dispatcher)
     {
         parent::__construct($req, $resp, $dispatcher);
@@ -108,21 +107,38 @@ class AuthTestService extends Zita\Security\AuthServiceBase
  */
 class SecureService extends \Zita\Service
 {
-    /**
-     * Allows any authenticated user.
-     * @Secure allow=anonymous;deny=none;order=allow,deny
-     */
     public function hello()
     {
         $this->response->body .= 'Hello '.$this->request->user->getIdentifier();
     }
 
-    /**
-     * @Secure allo=x;foo=bar
-     */
-    public function faultyParams()
+    public function anonymousMethod()
     {
+        $this->response->body = 'Hello world!';
+    }
 
+    /**
+     * @Authorize authenticated
+     */
+    public function authenticatedMethod()
+    {
+        $this->response->body = 'Hello authenticated world!';
+    }
+
+    /**
+     * @Authorize moderator
+     */
+    public function moderatorMethod()
+    {
+        $this->response->body = 'Hello moderator world!';
+    }
+
+    /**
+     * @Authorize admin
+     */
+    public function adminMethod()
+    {
+        $this->response->body = 'Hello admin world!';
     }
 }
 
@@ -177,13 +193,13 @@ class AuthTest extends PHPUnit_Framework_TestCase
         $this->assertNotEmpty($resp->body->auth);
         $this->assertNotEmpty($resp->body->remember);
         $remember = $resp->body->remember;
-        $access   = $resp->body->auth;
+        $auth   = $resp->body->auth;
 
         // Now another request with the access token we've just acquired and see if the service rememebrs who we are
         $req = new Request();
         $req->params->service = 'Secure';
         $req->params->method  = 'hello';
-        $req->params->auth    = $access;
+        $req->params->auth    = $auth;
         $resp = $d->dispatch($req);
         $this->assertEquals(json_encode('Hello john'), $resp->body);
 
@@ -201,14 +217,70 @@ class AuthTest extends PHPUnit_Framework_TestCase
 
         $req = new Request();
         $req->params->service       = 'Secure';
-        $req->params->method        = 'faultyParams';
+        $req->params->method        = 'anonymousMethod';
+        $req->params->type          = 'raw';
+        $resp = $d->dispatch($req);
+        $this->assertEquals('Hello world!', $resp->body);
+
+        $req = new Request();
+        $req->params->service       = 'Secure';
+        $req->params->method        = 'authenticatedMethod';
         $req->params->type          = 'raw';
         $resp = $d->dispatch($req);
 
         $expected = array('status' => 'FAIL',
-                        'type'   => 'Zita\ReflectionException',
-                        'errno'  => 7000,
-                        'msg'    => 'Zita\Annotations\SecureAnnotation::__construct() requires parameter: allow');
+            'type'   => 'Zita\Security\CouldNotAuthorizeException',
+            'errno'  => 3000,
+            'msg'    => 'Could not authorize.');
         $this->assertEquals($expected, $resp->body);
+
+        $req = new Request();
+        $req->params->service       = 'Secure';
+        $req->params->method        = 'authenticatedMethod';
+        $req->params->type          = 'raw';
+        $req->params->auth          = $auth;
+        $resp = $d->dispatch($req);
+        $this->assertEquals('Hello authenticated world!', $resp->body);
+
+        $req = new Request();
+        $req->params->service       = 'Secure';
+        $req->params->method        = 'moderatorMethod';
+        $req->params->type          = 'raw';
+        $req->params->auth          = $auth;
+        $resp = $d->dispatch($req);
+        $this->assertEquals('Hello moderator world!', $resp->body);
+
+        $req = new Request();
+        $req->params->service       = 'Secure';
+        $req->params->method        = 'adminMethod';
+        $req->params->type          = 'raw';
+        $req->params->auth          = $auth;
+        $resp = $d->dispatch($req);
+        $expected = array('status' => 'FAIL',
+            'type'   => 'Zita\Security\CouldNotAuthorizeException',
+            'errno'  => 3000,
+            'msg'    => 'Could not authorize.');
+        $this->assertEquals($expected, $resp->body);
+
+        // Let's authenticate as Jane and try ot access adminMethod again.
+        $req = new Request();
+        $req->params->service       = 'AuthTest';
+        $req->params->method        = 'auth';
+        $req->params->authenticator = 'Generic';
+        $req->params->identifier    = 'jane';
+        $req->params->data          = array('password' => 'mysecret2');
+        $req->params->type          = 'raw';
+        $resp = $d->dispatch($req);
+        $resp->body = new \Zita\ArrayWrapper($resp->body);
+        $this->assertEquals('OK', $resp->body->status);
+        $this->assertNotEmpty($resp->body->auth);
+        $auth   = $resp->body->auth;
+        $req = new Request();
+        $req->params->service       = 'Secure';
+        $req->params->method        = 'adminMethod';
+        $req->params->type          = 'raw';
+        $req->params->auth          = $auth;
+        $resp = $d->dispatch($req);
+        $this->assertEquals('Hello admin world!', $resp->body);
     }
 }

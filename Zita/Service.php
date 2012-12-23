@@ -2,7 +2,7 @@
 namespace Zita;
 
 /**
- * @Secure allow=all;deny=none;order=allow,deny
+ * @Authorize all
  * @OutputFilter AutoFormat
  */
 class Service
