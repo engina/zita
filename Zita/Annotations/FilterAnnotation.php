@@ -13,7 +13,7 @@ class FilterAnnotation implements IAnnotation
 {
 	private $cfg;
 	private $filters;
-	public function __construct($cfg)
+	public function __construct($cfg = null)
 	{
 		$this->cfg = $cfg;
         $this->filters = array();

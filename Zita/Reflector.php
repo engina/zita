@@ -8,38 +8,71 @@ class Reflector
      */
     public static $IGNORED_ANNOTATIONS = array('return', 'param', 'throws');
 
-	protected static function parseAnnotation($doccomment)
-	{
-		$result = array();
-		$lines = explode("\n", $doccomment);
-		foreach($lines as $line)
-		{
-			$key = null;
-			$value = null; 
-			$line = trim($line);
-			if(substr($line, 0, 1) == '*')
-				$line = substr($line, 1);
-			
-			$line = trim($line);
-			if(substr($line, 0, 1) != '@')
-				continue;
-			$valueStart = strpos($line, ' ');
-			if($valueStart === false)
-			{
-				// No value annotation
-				$key = substr($line, 1);
-				$value = null;
-				goto push;
-			}
-			
-			$key = trim(substr($line, 1, $valueStart));
-			$value = trim(substr($line, $valueStart));
-			push:
-            if(in_array($key, self::$IGNORED_ANNOTATIONS)) continue;
-			$result[$key] = $value;
-		}
-		return $result;
-	}
+    protected static function parseAnnotation($doccomment)
+    {
+        $result = array();
+        $lines = explode("\n", $doccomment);
+        foreach($lines as $line)
+        {
+            $key = null;
+            $value = null;
+            $line = trim($line);
+            if(substr($line, 0, 1) == '*')
+                $line = substr($line, 1);
+
+            $line = trim($line);
+            if(substr($line, 0, 1) != '@')
+                continue;
+            $valueStart = strpos($line, ' ');
+            if($valueStart === false)
+            {
+                // No value annotation
+                $key = substr($line, 1);
+                $value = null;
+                goto push;
+            }
+
+            $key = trim(substr($line, 1, $valueStart));
+            $value = trim(substr($line, $valueStart));
+            if(strpos($value, ';') !== false)
+            {
+                // Multi value annotation
+                $values = explode(';', $value);
+                $value = array();
+                foreach($values as $v)
+                {
+                    $v = trim($v);
+                    if(strpos($v, '=') !== false)
+                    {
+                        // Key value pair
+                        list($value_key, $value_value) = explode('=', $v);
+                        $value[trim($value_key)] = trim($value_value);
+                    }
+                    else
+                    {
+                        // Just a key
+                        array_push($value, $v);
+                    }
+                }
+            }
+            else
+            {
+                // Single value annotation
+                if($value === 'true')
+                    $value = true;
+                if($value === 'false')
+                    $value = false;
+                if($value === 'null')
+                    $value = null;
+            }
+
+            push:
+            if(in_array($key, self::$IGNORED_ANNOTATIONS))
+                continue;
+            $result[$key] = $value;
+        }
+        return $result;
+    }
 
     private static function _getClassAnnotation(\ReflectionClass $class, $inherit)
     {
@@ -125,4 +158,58 @@ class Reflector
         }
         return $annotations;
 	}
+
+    /**
+     * Checks the provided method's parameter list against $params and prepares an array to be passed to
+     * ReflectionMethod::invokeArgs().
+     *
+     * If $params lack some non-optional parameters of the given method, Zita\ReflectionException will be thrown.
+     *
+     * <code>
+     * class Foo
+     * {
+     *   public function bar($name, $surname);
+     * }
+     *
+     * $params = array('x' => 'y', 'name' => 'John', 'surname' => 'Doe', 'a' => 'b');
+     * var_dump(Reflector::invokeArgs(new ReflectionMethod('Foo', 'bar'), $params));
+     * </code>
+     * Will print array('John', 'Doe'). As those are the required parameters for the method to be run via
+     * ReflectionMethod::invokeArgs
+     *
+     * @param \ReflectionMethod $method
+     * @param array $params
+     * @return array
+     * @throws ReflectionException
+     */
+    public static function invokeArgs(\ReflectionMethod $method, $params, $ignoreSuperflous = false)
+    {
+        if(!is_array($params))
+            $params = array($params);
+        $paramList = array();
+
+        $methodParams = $method->getParameters();
+
+        // If the method requires a single parameter and annotation parameter is a single value (@foo bar) just pass
+        // bar to the method as parameter and do not require (@foo param=bar) notation.
+        if(count($methodParams) == 1 && count($params) == 1)
+            return $params;
+
+        foreach($methodParams as $p => $param)
+        {
+            if(!isset($params[$param->name]))
+            {
+                // This parameter is not in the provided $params, if it is not an optional parameter this is a fatal error
+                if(!$param->isOptional())
+                    throw new ReflectionException($method->class.'::'.$method->name.'() requires parameter: '.$param->name);
+                // OK, we don't have it and it is optional, so we can just skip this one.
+                continue;
+            }
+            array_push($paramList, $params[$param->name]);
+            unset($params[$param->name]);
+        }
+        if(!$ignoreSuperflous && count($params) > 0)
+            throw new ReflectionException('There are superflous parameters: '.implode(', ', array_keys($params)));
+        return $paramList;
+    }
 }

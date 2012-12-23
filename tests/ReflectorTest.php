@@ -22,6 +22,11 @@ class SampleClass
 	{
 		
 	}
+
+    public function foo($a, $b, $c = 'c')
+    {
+        return $a.$b.$c;
+    }
 }
 
 /**
@@ -66,10 +71,10 @@ class ReflectorTest extends PHPUnit_Framework_TestCase
 		$annotations = Zita\Reflector::getClassAnnotation('SampleClass');
 		$expected = array('author' => 'Engin',
 						  'Foo' => 'bar',
-				          'Public' => 'true',
-				          'Zor' => 'foo=bar;hell=no',
+				          'Public' => true,
+				          'Zor' => array('foo'=>'bar', 'hell'=>'no'),
 				          'NoParam' => null);
-		
+		// var_exports are used because we want to test the order of the keys too.
 		$this->assertEquals(var_export($expected, true), var_export($annotations, true));
 	}
 
@@ -78,8 +83,8 @@ class ReflectorTest extends PHPUnit_Framework_TestCase
 		$annotations = Zita\Reflector::getMethodAnnotation('SampleClass', 'method');
 		$expected = array('author' => 'Engin',
 						  'Foo' => 'bar',
-				          'Public' => 'false',
-				          'Zor' => 'foo=bar;hell=no',
+				          'Public' => false,
+				          'Zor' => array('foo'=>'bar', 'hell'=>'no'),
 				          'NoParam' => null,
                           'AnnoA' => 'foo');
 		$this->assertEquals(var_export($expected, true), var_export($annotations, true));
@@ -90,11 +95,11 @@ class ReflectorTest extends PHPUnit_Framework_TestCase
         $annotations = Zita\Reflector::getClassAnnotation('ChildClass');
         $expected = array('author' => 'Engin',
             'Foo' => 'baz',
-            'Public' => 'true',
-            'Zor' => 'foo=bar;hell=no',
+            'Public' => true,
+            'Zor' => array('foo'=>'bar', 'hell'=>'no'),
             'NoParam' => null,
             'AnnoC' => 'duh');
-        $this->assertEquals($expected, $annotations);
+        $this->assertEquals(var_export($expected, true), var_export($annotations, true));
     }
 
     public function testAnnotationMethodInheritance()
@@ -102,11 +107,11 @@ class ReflectorTest extends PHPUnit_Framework_TestCase
         $annotations = Zita\Reflector::getClassAnnotation('ChildClass');
         $expected = array('author' => 'Engin',
             'Foo' => 'baz',
-            'Public' => 'true',
-            'Zor' => 'foo=bar;hell=no',
+            'Public' => true,
+            'Zor' => array('foo'=>'bar', 'hell'=>'no'),
             'NoParam' => null,
             'AnnoC' => 'duh');
-        $this->assertEquals($expected, $annotations);
+        $this->assertEquals(var_export($expected, true), var_export($annotations, true));
     }
 
     public function testDeepAnnotationInheritance()
@@ -114,18 +119,18 @@ class ReflectorTest extends PHPUnit_Framework_TestCase
         $annotations = Zita\Reflector::getClassAnnotation('ChildClass3');
         $expected = array('author' => 'Engin',
             'Foo' => 'l0lz',
-            'Public' => 'true',
-            'Zor' => 'foo=bar;hell=no',
+            'Public' => true,
+            'Zor' => array('foo'=>'bar', 'hell'=>'no'),
             'NoParam' => null,
             'AnnoC' => 'duh');
-        $this->assertEquals($expected, $annotations);
+        $this->assertEquals(var_export($expected, true), var_export($annotations, true));
     }
 
     public function testNoInherit()
     {
         $annotations = Zita\Reflector::getClassAnnotation('ChildClass3', false);
         $expected = array('Foo' => 'l0lz');
-        $this->assertEquals($expected, $annotations);
+        $this->assertEquals(var_export($expected, true), var_export($annotations, true));
     }
 
     public function testInheritMethod()
@@ -134,17 +139,61 @@ class ReflectorTest extends PHPUnit_Framework_TestCase
         $expected = array(
             'author' => 'Engin',
             'Foo'    => 'l0lz',
-            'Public' => 'true',
-            'Zor'    => 'foo=bar;hell=no',
+            'Public' => true,
+            'Zor'    => array('foo'=>'bar', 'hell'=>'no'),
             'NoParam' => null,
             'AnnoA'  => 'bar',
             'AnnoC'  => 'duh');
-        $this->assertEquals($expected, $annotations);
+        $this->assertEquals(var_export($expected, true), var_export($annotations, true));
     }
     public function testNoInheritMethod()
     {
         $annotations = Zita\Reflector::getMethodAnnotation('ChildClass3', 'method', false);
-        $expected = array('Foo' => 'l0lz', 'Public' => 'true');
-        $this->assertEquals($expected, $annotations);
+        $expected = array('Foo' => 'l0lz', 'Public' => true);
+        $this->assertEquals(var_export($expected, true), var_export($annotations, true));
+    }
+
+    /**
+     * @expectedException \Zita\ReflectionException
+     */
+    public function testInvokeMissing()
+    {
+        $method = new ReflectionMethod('SampleClass', 'foo');
+        $params = array();
+        $instance = new SampleClass();
+        $args = Zita\Reflector::invokeArgs($method, $params);
+        $method->invokeArgs($instance, $args);
+    }
+
+    public function testInvokeMissingOptional()
+    {
+        $method = new ReflectionMethod('SampleClass', 'foo');
+        $params = array('a' => 'a', 'b' => 'b');
+        $instance = new SampleClass();
+        $args = Zita\Reflector::invokeArgs($method, $params);
+        $result = $method->invokeArgs($instance, $args);
+        $this->assertEquals('abc', $result);
+    }
+
+    public function testInvokeNormal()
+    {
+        $method = new ReflectionMethod('SampleClass', 'foo');
+        $params = array('a' => '1', 'b' => '2', 'c' => '3');
+        $instance = new SampleClass();
+        $args = Zita\Reflector::invokeArgs($method, $params);
+        $result = $method->invokeArgs($instance, $args);
+        $this->assertEquals('123', $result);
+    }
+
+    /**
+     * @expectedException \Zita\ReflectionException
+     */
+    public function testInvokeSuperflousParams()
+    {
+        $method = new ReflectionMethod('SampleClass', 'foo');
+        $params = array('a' => '1', 'b' => '2', 'c' => '3', 'bogus' => 'shit');
+        $instance = new SampleClass();
+        $args = Zita\Reflector::invokeArgs($method, $params);
+        $result = $method->invokeArgs($instance, $args);
     }
 }

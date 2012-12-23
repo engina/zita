@@ -106,34 +106,34 @@ class Dispatcher
 			if(!$method->isPublic())
 				throw new DispatcherException('Method not accessible.', DISPATCHER_ERROR_METHOD_ACCESS);
 
+            $service = new $classPath($req, $resp, $this);
+
 			// annotations
 			$annotations = Reflector::getMethodAnnotation($classPath, $m);
-			
-			$service = new $classPath($req, $resp, $this);
+			$annotationInstances = array();
+
+            foreach($annotations as $annotation => $params)
+            {
+                $annotation .= 'Annotation';
+                $classPath   = Core::load($annotation);
+                $class       = new \ReflectionClass($classPath);
+                if(!$class->isSubclassOf('\Zita\IAnnotation'))
+                    throw new DispatcherException("Annotation class does not implement IAnnotation interface.", DISPATCHER_ERROR_ANNOTATION_IMPL);
+                $args        = Reflector::invokeArgs($class->getConstructor(), $params);
+                $annotation  = $class->newInstanceArgs($args);
+                $annotationInstances[] = $annotation;
+            }
+
 			try
             {
-                foreach($annotations as $annotation => $params)
+                foreach($annotationInstances as $annotation)
                 {
-                    $annotation .= 'Annotation';
-                    $classPath = Core::load($annotation);
-                    $annotation = new $classPath($params);
-                    if(!($annotation instanceof IAnnotation))
-                        throw new DispatcherException("Annotation class does not implement IAnnotation interface.", DISPATCHER_ERROR_ANNOTATION_IMPL);
                     $annotation->preProcess($req, $resp, $this, $service, $m);
                 }
-
                 if($req->handled !== true)
                 {
-                    $paramList = array();
-                    $params = $method->getParameters();
-                    foreach($params as $p => $param)
-                    {
-                        if($req->params->__get($param->name) == null && !$param->isOptional())
-                            throw new DispatcherException('Missing parameter: '.$param->name, DISPATCHER_ERROR_METHOD_PARAM);
-                        array_push($paramList, $req->params->__get($param->name));
-                    }
-
-                    $method->invokeArgs($service, $paramList);
+                    $args = Reflector::invokeArgs($method, $req->params->toArray(), true);
+                    $method->invokeArgs($service, $args);
                 }
             }
 			catch(\Exception $e)
@@ -143,13 +143,11 @@ class Dispatcher
                 // to report an issue (i.e. Authorization problem). Post processing from now on can re-format this error message (i.e. to XML).
                 $resp->body = array('status' => 'FAIL', 'type' => get_class($e), 'errno' => $e->getCode(), 'msg' => $e->getMessage());
             }
-			foreach($annotations as $annotation => $params)
-			{
-				$annotation .= 'Annotation';
-				$classPath = Core::load($annotation);
-				$annotation = new $classPath($params);
-				$annotation->postProcess($req, $resp, $this, $service, $m);
-			}
+
+            foreach($annotationInstances as $annotation)
+            {
+                $annotation->postProcess($req, $resp, $this, $service, $m);
+            }
 		}
 		catch(\Exception $e)
 		{

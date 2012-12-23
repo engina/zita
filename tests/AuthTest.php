@@ -110,7 +110,7 @@ class SecureService extends \Zita\Service
 {
     /**
      * Allows any authenticated user.
-     * @Secure allow anonymous
+     * @Secure allow=anonymous;deny=none;order=allow,deny
      */
     public function hello()
     {
@@ -118,9 +118,9 @@ class SecureService extends \Zita\Service
     }
 
     /**
-     * @Secure allow role MODERATOR and USER but deny
+     * @Secure allo=x;foo=bar
      */
-    public function allowAd()
+    public function faultyParams()
     {
 
     }
@@ -198,5 +198,17 @@ class AuthTest extends PHPUnit_Framework_TestCase
         $resp->body = new \Zita\ArrayWrapper($resp->body);
         $this->assertEquals('OK', $resp->body->status);
         $this->assertNotEmpty($resp->body->auth);
+
+        $req = new Request();
+        $req->params->service       = 'Secure';
+        $req->params->method        = 'faultyParams';
+        $req->params->type          = 'raw';
+        $resp = $d->dispatch($req);
+
+        $expected = array('status' => 'FAIL',
+                        'type'   => 'Zita\ReflectionException',
+                        'errno'  => 7000,
+                        'msg'    => 'Zita\Annotations\SecureAnnotation::__construct() requires parameter: allow');
+        $this->assertEquals($expected, $resp->body);
     }
 }

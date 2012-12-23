@@ -10,7 +10,7 @@ class ArrayWrapper
 		$this->storage = $arr;
 	}
 
-    protected function getStorage()
+    public function toArray()
     {
         return $this->storage;
     }

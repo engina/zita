@@ -28,7 +28,7 @@ class Session extends ArrayWrapper
      */
     public function save()
     {
-        return $this->provider->save($this->getSID(), $this->getStorage());
+        return $this->provider->save($this->getSID(), $this->toArray());
     }
 
     /**

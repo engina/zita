@@ -26,9 +26,8 @@ use Zita\Dispatcher;
  */
 class SecureAnnotation implements IAnnotation
 {
-	public function __construct($params)
+	public function __construct($allow, $deny, $order)
 	{
-		
 	}
 
 	public function preProcess (Request $req, Response $resp, Dispatcher $dispatcher, Service $service, $method)
