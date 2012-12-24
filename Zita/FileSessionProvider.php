@@ -4,6 +4,8 @@ namespace Zita;
 /**
  * File based session provider
  *
+ * Depends on the file system's access time data.
+ *
  * Could have used PHP Sessions though it'd have require us to modify application wide session configuration
  * which might break already application.
  */
@@ -70,7 +72,15 @@ class FileSessionProvider implements  ISessionProvider
      */
     public function load($sid)
     {
-        $data = file_get_contents(Core::path($this->getPath(), $sid));
+        $file = Core::path($this->getPath(), $sid);
+
+        $atime = fileatime($file);
+        $time  = time();
+        if($atime < ($time - self::getWindow()))
+            return null;
+
+        touch($file);
+        $data = file_get_contents($file);
         if($data === false)
             return null;
         $data = unserialize($data);
