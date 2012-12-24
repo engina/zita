@@ -21,7 +21,7 @@ class Request
 		$this->session = null;
 		$this->server  = new ArrayWrapper($_SERVER);
 		$this->method  = $this->server->REQUEST_METHOD;
-
+        $this->body    = file_get_contents('php://input');
 		$headers = array();
 		foreach($_SERVER as $key => $value)
 		{
@@ -29,7 +29,12 @@ class Request
 			$header = str_replace(' ', '-', ucwords(str_replace('_', ' ', strtolower(substr($key, 5)))));
 			$headers[$header] = $value;			
 		}
-		$this->headers = new ArrayWrapper($headers);
+        // Normalize idiotic PHP.
+        if(isset($_SERVER['CONTENT_TYPE']))
+        {
+            $headers['Content-Type'] = $_SERVER['CONTENT_TYPE'];
+        }
+		$this->headers = $headers;
 	}
 	
 	/**

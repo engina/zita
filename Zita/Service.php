@@ -3,6 +3,7 @@ namespace Zita;
 
 /**
  * @Authorize all
+ * @InputFilter AutoFormat
  * @OutputFilter AutoFormat
  */
 class Service

@@ -14,7 +14,12 @@ class ArrayWrapper
     {
         return $this->storage;
     }
-	
+
+    public function fromArray(array $arr)
+    {
+        $this->storage = $arr;
+    }
+
 	public function __get($name)
 	{
 		if(!isset($this->storage[$name]))

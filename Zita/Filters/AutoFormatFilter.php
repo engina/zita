@@ -5,6 +5,8 @@ use Zita\Request;
 use Zita\Response;
 use Zita\Dispatcher;
 use Zita\Service;
+use Zita\IFilter;
+
 /*
  * This assocToXML implementation is borrowed from  James Earlywine - July 20th 2011
  *
@@ -38,7 +40,7 @@ function assocToXML ($theArray, $tabCount=2, $root = true)
     return $theXML;
 }
 
-class AutoFormatFilter extends \Zita\OutputFilter
+class AutoFormatFilter implements IFilter
 {
     function postProcess(Request $req, Response $resp, Dispatcher $dispatcher, Service $service, $method)
     {
@@ -64,7 +66,11 @@ class AutoFormatFilter extends \Zita\OutputFilter
         }
     }
 
-    function __construct($param)
+    public function preProcess(Request $req, Response $resp, Dispatcher $dispatcher, Service $service, $method)
     {
+        if($req->headers['Content-Type'] == 'application/json')
+        {
+            $req->params->fromArray(array_merge($req->params->toArray(), json_decode($req->body, true)));
+        }
     }
 }

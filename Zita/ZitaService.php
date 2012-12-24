@@ -8,57 +8,42 @@ namespace Zita;
 class ZitaService extends  Service
 {
     /**
-     * Discovers the available controllers to build API definition.
+     * Discovers the available services to build API definition.
      */
     public function discover()
     {
-        $before = get_declared_classes();
-        foreach(Core::getIncludePaths() as $path)
-        {
-            foreach(glob(Core::path($path, '/*Service.php'))  as $service)
-            {
-                require_once($service);
-            }
-        }
-        $after = get_declared_classes();
-        $classes = array_diff($after, $before);
+        $this->response->body = Reflector::discover();
+    }
 
-        $result = array();
-        foreach($classes as $class)
+    /**
+     * We do not want any encoding for the output.
+     * @OutputFilter
+     */
+    public function apigen($apiName = 'ZitaAPI', $callback = 'zita_api')
+    {
+        $services = Reflector::discover();
+        $result = "var $apiName = {\n";
+        foreach($services as $service => $methods)
         {
-            $r = new \ReflectionClass($class);
-            if(!$r->isSubclassOf('\Zita\Service'))
-                continue;
-            if(!$r->isInstantiable())
-                continue;
-            $m = array();
-            $methods = $r->getMethods(\ReflectionMethod::IS_PUBLIC);
-            foreach($methods as $method)
+            $service = substr($service, 0, -7);
+            $result .= "  $service: {\n";
+            foreach($methods as $method => $methodInfo)
             {
-                if($method->isConstructor()) continue;
-
-                $parameters = array();
-                foreach($method->getParameters() as $parameter)
+                $cb_data = '{';
+                $args = '';
+                foreach($methodInfo['parameters'] as $param => $detail)
                 {
-                    $param_info = array();
-                    $param_info['optional'] = false;
-                    if($parameter->isDefaultValueAvailable())
-                    {
-                        $param_info['default'] = $parameter->getDefaultValue();
-                        $param_info['optional'] = true;
-                    }
-                    $type = $parameter->getClass();
-                    if($type == null)
-                        $type = 'String';
-                    $param_info['type'] = $type;
-                    $parameters[$parameter->getName()] = $param_info;
+                    $args .= $param.', ';
+                    $cb_data .= "'$param':$param,";
                 }
-                $m[$method->getName()] = array('parameters' => $parameters);
+                $args = substr($args, 0, -2);
+                $cb_data .= '}';
+                $result .= '    '.$method.': function('.$args.'){'.$callback.'(\''.$service.'\', \''.$method."', $cb_data)},\n";
             }
-
-            if(count($m) == 0) continue;
-            $result[$r->getShortName()] = $m;
+            $result .= "  },\n";
         }
+        $result .= "}";
+        $this->response->headers['Content-type'] = 'application/javascript';
         $this->response->body = $result;
     }
 }
