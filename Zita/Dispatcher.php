@@ -58,13 +58,7 @@ class Dispatcher
 
 			if($req->method == 'OPTIONS')
 				goto respond;
-			
-			if(strtolower($req->server->QUERY_STRING) == 'discover')
-			{
-				$RESPONSE = $this->discover();
-				goto respond;
-			}
-			
+
 			$service = $req->params->service;
 			$m       = $req->params->method;
 

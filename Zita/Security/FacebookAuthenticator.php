@@ -27,6 +27,7 @@ class FacebookAuthenticator implements IAuthenticator
 
 	public function authenticate($identifier, $data)
 	{
+        $_REQUEST['signed_request'] = $data['signed_request'];
         $me = $this->facebook->api('/me');
         if($me['id'] != $identifier)
             return null;
