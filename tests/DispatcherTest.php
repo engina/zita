@@ -15,8 +15,14 @@ class DispatcherTestService extends Service
         $this->response->body = "Hello $name";
 	}
 
-	private function secret()
+    private function secret()
+    {
+
+    }
+
+	public function complexResponse()
 	{
+        $this->response->body = array('status' => 'OK', 'msg' => 'Hello world!');
 	}
 }
 
@@ -107,4 +113,15 @@ class DispatcherTest extends PHPUnit_Framework_TestCase
 		$response = $d->dispatch($req);
 		$this->assertEquals(json_encode("Hello $name"), $response->body);
 	}
+
+    public function testXml()
+    {
+        $req = new Request();
+        $req->params->service = 'DispatcherTest';
+        $req->params->method = 'complexResponse';
+        $req->params->type = 'xml';
+        $d = new Dispatcher();
+        $response = $d->dispatch($req);
+        $this->assertEquals("<root>\n   <status>OK</status>\n   <msg>Hello world!</msg>\n</root>", $response->body);
+    }
 }

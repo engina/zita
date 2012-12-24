@@ -87,6 +87,9 @@ class MyUserProvider implements IUserProvider
     }
 }
 
+/*
+ * This is the service where users log in -- note that it is derived from AuthServiceBase
+ */
 class AuthTestService extends Zita\Security\AuthServiceBase
 {
     function __construct(Request $req, Response $resp, \Zita\Dispatcher $dispatcher)
@@ -97,10 +100,9 @@ class AuthTestService extends Zita\Security\AuthServiceBase
 }
 
 /*
- * \Zita\Service already has an @Secure annotation which just enables authentication mechanisms for all services
- * unless "@Secure off" is provided in the derived services.
+ * \Zita\Service already has an @Authorize annotation which just enables authentication mechanisms for all services.
  *
- * Authentication service, which is enabled by default, processes $this->request->params->access and gets user associated with it
+ * AuthorizeAnnotation, which is enabled by default, processes $this->request->params->auth and gets user associated with it
  * and places it in $this->request->user which is an IUser object.
  *
  * If $this->request->user is null, the user is not using an access point hence it is an anonymous access.
