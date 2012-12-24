@@ -22,7 +22,31 @@ class ZitaService extends  Service
     public function apigen($apiName = 'ZitaAPI', $callback = 'zita_api')
     {
         $services = Reflector::discover();
-        $result = "var $apiName = {\n";
+        $result = <<<SCRIPT
+/* Example implementation
+
+function zita_api_success(response, options)
+{
+
+}
+
+function zita_api_failure(response, options)
+{
+
+}
+
+function $callback(service, method, params, success_cb, failure_cb)
+{
+    Ext.Ajax.request({url: 'api/0.1/api.php',
+                      params: {'service': service, 'method': method},
+                      jsonData: params,
+                      success: success_cb === undefined ? zita_api_success : success_cb,
+                      failure: failure_cb === undefined ? zita_api_failure : failure_cb});
+}
+*/
+var $apiName = {
+SCRIPT;
+
         foreach($services as $service => $methods)
         {
             $service = substr($service, 0, -7);
@@ -36,9 +60,9 @@ class ZitaService extends  Service
                     $args .= $param.', ';
                     $cb_data .= "'$param':$param,";
                 }
-                $args = substr($args, 0, -2);
+                $args .= 'success, failure';
                 $cb_data .= '}';
-                $result .= '    '.$method.': function('.$args.'){'.$callback.'(\''.$service.'\', \''.$method."', $cb_data)},\n";
+                $result .= '    '.$method.': function('.$args.'){'.$callback.'(\''.$service.'\', \''.$method."', $cb_data, success, failure)},\n";
             }
             $result .= "  },\n";
         }

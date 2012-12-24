@@ -52,11 +52,13 @@ class AutoFormatFilter implements IFilter
         switch($type)
         {
             case 'json':
+                $resp->headers['Content-Type'] = 'application/json';
                 $resp->body = json_encode($resp->body);
                 if($req->params->callback != null)
                     $resp->body = $req->params->callback.'('.$resp->body.');';
                 break;
             case 'xml';
+                $resp->headers['Content-Type'] = 'application/xml';
                 $resp->body = assocToXML($resp->body);
                 break;
             case 'raw':

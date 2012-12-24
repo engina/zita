@@ -8,11 +8,6 @@ use Zita\Security\IUserProvider;
 Core::addIncludePath(Core::path(ZITA_ROOT, 'Zita', 'vendors', 'facebook-php-sdk', 'src'));
 require_once Core::path(ZITA_ROOT, 'Zita', 'vendors', 'facebook-php-sdk', 'src', 'facebook.php');
 
-// Database stuff
-use PropelGenerated\UserQuery;
-require_once 'propel/Propel.php';
-\Propel::init("build/conf/WMI-conf.php");
-Core::addIncludePath('build/classes');
 
 class FacebookAuthenticator implements IAuthenticator
 {
