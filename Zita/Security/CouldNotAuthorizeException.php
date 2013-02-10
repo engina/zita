@@ -9,6 +9,6 @@ class CouldNotAuthorizeException extends SecurityException
 {
     public function __construct($msg = 'Could not authorize.')
     {
-        parent::__construct($msg, 0);
+        parent::__construct($msg, 1);
     }
 }

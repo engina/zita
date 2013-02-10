@@ -59,11 +59,11 @@ abstract class AuthServiceBase extends Service
         $session->user = $user;
 
 		$this->response->body = array('status' => 'OK',
-                                      'auth'   => $session->getSID());
-        if($remember)
+                                      'result' => array('auth' => $session->getSID()));
+        if($remember == 'true')
         {
             // This provides IAuthenticator agnostic remember me functionality.
-            $this->response->body['remember'] = Security::base64UrlEncode(Security::encrypt(serialize($data)));
+            $this->response->body['result']['remember'] = Security::base64UrlEncode(Security::encrypt(serialize($data)));
         }
 	}
 

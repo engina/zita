@@ -26,6 +26,11 @@ class ArrayWrapper
 		{
 			return null;
 		}
+        $val = $this->storage[$name];
+        if(is_array($val))
+        {
+            return new ArrayWrapper($val);
+        }
 		return $this->storage[$name];
 	}
 	

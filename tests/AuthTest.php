@@ -192,10 +192,10 @@ class AuthTest extends PHPUnit_Framework_TestCase
         $resp = $d->dispatch($req);
         $resp->body = new \Zita\ArrayWrapper($resp->body);
         $this->assertEquals('OK', $resp->body->status);
-        $this->assertNotEmpty($resp->body->auth);
-        $this->assertNotEmpty($resp->body->remember);
-        $remember = $resp->body->remember;
-        $auth   = $resp->body->auth;
+        $this->assertNotEmpty($resp->body->result->auth);
+        $this->assertNotEmpty($resp->body->result->remember);
+        $remember = $resp->body->result->remember;
+        $auth   = $resp->body->result->auth;
 
         // Now another request with the access token we've just acquired and see if the service rememebrs who we are
         $req = new Request();
@@ -215,7 +215,7 @@ class AuthTest extends PHPUnit_Framework_TestCase
         $resp = $d->dispatch($req);
         $resp->body = new \Zita\ArrayWrapper($resp->body);
         $this->assertEquals('OK', $resp->body->status);
-        $this->assertNotEmpty($resp->body->auth);
+        $this->assertNotEmpty($resp->body->result->auth);
 
         $req = new Request();
         $req->params->service       = 'Secure';
@@ -232,7 +232,7 @@ class AuthTest extends PHPUnit_Framework_TestCase
 
         $expected = array('status' => 'FAIL',
             'type'   => 'Zita\Security\CouldNotAuthorizeException',
-            'errno'  => 3000,
+            'errno'  => 3001,
             'msg'    => 'Could not authorize.');
         $this->assertEquals($expected, $resp->body);
 
@@ -260,7 +260,7 @@ class AuthTest extends PHPUnit_Framework_TestCase
         $resp = $d->dispatch($req);
         $expected = array('status' => 'FAIL',
             'type'   => 'Zita\Security\CouldNotAuthorizeException',
-            'errno'  => 3000,
+            'errno'  => 3001,
             'msg'    => 'Could not authorize.');
         $this->assertEquals($expected, $resp->body);
 
@@ -275,8 +275,8 @@ class AuthTest extends PHPUnit_Framework_TestCase
         $resp = $d->dispatch($req);
         $resp->body = new \Zita\ArrayWrapper($resp->body);
         $this->assertEquals('OK', $resp->body->status);
-        $this->assertNotEmpty($resp->body->auth);
-        $auth   = $resp->body->auth;
+        $this->assertNotEmpty($resp->body->result->auth);
+        $auth   = $resp->body->result->auth;
         $req = new Request();
         $req->params->service       = 'Secure';
         $req->params->method        = 'adminMethod';

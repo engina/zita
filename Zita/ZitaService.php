@@ -5,7 +5,7 @@ namespace Zita;
  * Date: 17.12.2012
  * Time: 17:45
  */
-class ZitaService extends  Service
+class ZitaService extends Service
 {
     /**
      * Discovers the available services to build API definition.
@@ -23,28 +23,19 @@ class ZitaService extends  Service
     {
         $services = Reflector::discover();
         $result = <<<SCRIPT
-/* Example implementation
+// You MUST implement $callback yourself -- Example jQuery implementation
+//
+// function $callback(service, method, params, success_cb, failure_cb)
+// {
+//    var zitaParams = {service: service, method: method};
+//    if(ZitaAPI.auth != undefined) {
+//      zitaParams.auth = ZitaAPI.auth;
+//    }
+//    $.post('api.php', $.extend(params, zitaParams), success_cb);
+// }
 
-function zita_api_success(response, options)
-{
-
-}
-
-function zita_api_failure(response, options)
-{
-
-}
-
-function $callback(service, method, params, success_cb, failure_cb)
-{
-    Ext.Ajax.request({url: 'api/0.1/api.php',
-                      params: {'service': service, 'method': method},
-                      jsonData: params,
-                      success: success_cb === undefined ? zita_api_success : success_cb,
-                      failure: failure_cb === undefined ? zita_api_failure : failure_cb});
-}
-*/
 var $apiName = {
+
 SCRIPT;
 
         foreach($services as $service => $methods)
@@ -62,7 +53,7 @@ SCRIPT;
                 }
                 $args .= 'success, failure';
                 $cb_data .= '}';
-                $result .= '    '.$method.': function('.$args.'){'.$callback.'(\''.$service.'\', \''.$method."', $cb_data, success, failure)},\n";
+                $result .= '    '.$method.': function('.$args."){\n        ".$callback.'(\''.$service.'\', \''.$method."', $cb_data, success, failure)\n    },\n";
             }
             $result .= "  },\n";
         }

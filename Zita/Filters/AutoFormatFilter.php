@@ -52,13 +52,13 @@ class AutoFormatFilter implements IFilter
         switch($type)
         {
             case 'json':
-                $resp->headers['Content-Type'] = 'application/json';
+                $resp->headers['Content-Type'] = 'application/json;charset=utf8';
                 $resp->body = json_encode($resp->body);
                 if($req->params->callback != null)
                     $resp->body = $req->params->callback.'('.$resp->body.');';
                 break;
             case 'xml';
-                $resp->headers['Content-Type'] = 'application/xml';
+                $resp->headers['Content-Type'] = 'application/xml;charset=utf8';
                 $resp->body = assocToXML($resp->body);
                 break;
             case 'raw':
@@ -70,7 +70,7 @@ class AutoFormatFilter implements IFilter
 
     public function preProcess(Request $req, Response $resp, Dispatcher $dispatcher, Service $service, $method)
     {
-        if($req->headers['Content-Type'] == 'application/json')
+        if(isset($req->headers['Content-Type']) && strstr($req->headers['Content-Type'], 'application/json') !== false)
         {
             $req->params->fromArray(array_merge($req->params->toArray(), json_decode($req->body, true)));
         }

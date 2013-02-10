@@ -61,14 +61,14 @@ namespace // Global
 	{
 		public function testAutoLoading()
 		{
-			$this->assertEquals("C:\\Users\\Engin\\Code\\PHP\\WMI\\api\\0.1\\zita", ZITA_ROOT);
+            $this->assertEquals(dirname(dirname(__FILE__)), ZITA_ROOT);
 			$this->assertEquals("\\A", Core::load("A"));
 			$this->assertEquals("\\TestNS1\\A", Core::load("TestNS1\\A"));
 			$this->assertEquals("\\TestNS2\\A", Core::load("TestNS2\\A"));
 			$this->assertEquals("\\TestNS1\\B", Core::load("B"));
-			$this->assertEquals("\\TestNS1\\SubA\D", Core::load("D"));
-			$this->assertEquals("\\TestNS1\\SubA\D", Core::load("SubA\\D"));
-			$this->assertEquals("\\TestNS2\\SubB\D", Core::load("SubB\\D"));
+			$this->assertEquals("\\TestNS1\\SubA\\D", Core::load("D"));
+			$this->assertEquals("\\TestNS1\\SubA\\D", Core::load("SubA\\D"));
+			$this->assertEquals("\\TestNS2\\SubB\\D", Core::load("SubB\\D"));
 			$this->assertEquals("\\TestNS2\\C", Core::load("C"));
 		}
 		

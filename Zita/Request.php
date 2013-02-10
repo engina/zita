@@ -10,10 +10,15 @@ class Request
 		// $_REQUEST aggragates $_GET, $_POST and $_COOKIE
 		// Though which one overrides the other is decided by variables_order directive
 		// of php.ini, therefore we aggregate $_COOKIE, $_POST, $_GET in this specific order.
-		// Meaning $_COOKIE has the least priority wher $_GET has the most. 
+		// Meaning $_COOKIE has the least priority where $_GET has the most.
 		$params        = $_COOKIE;
 		$params        = array_merge($params, $_POST);
 		$params        = array_merge($params, $_GET);
+        dump($_FILES);
+        foreach($_FILES as $name => $file)
+        {
+            $params[$name] = new File($file);
+        }
 		$this->params  = new ArrayWrapper($params);
 		$this->get     = new ArrayWrapper($_GET);
 		$this->post    = new ArrayWrapper($_POST);

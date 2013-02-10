@@ -15,6 +15,10 @@ $ERR_500 = false;
 
 function errorHandler($errno , $errstr, $errfile, $errline, $errcontext)
 {	
+	if(!touch(ZITA_LOG . '.context'))
+	{
+		throw new Exception("Log file not writable (".getcwd().DIRECTORY_SEPARATOR.ZITA_LOG.")");
+	}
 	$ctx_id = date('z-Gi');
 	$str = $errstr.' ['. $errno . '] in ' . $errfile . ' on line ' . $errline .
 			   "\n Context: $ctx_id (check context.log for details)\n";
