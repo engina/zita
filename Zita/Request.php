@@ -14,7 +14,6 @@ class Request
 		$params        = $_COOKIE;
 		$params        = array_merge($params, $_POST);
 		$params        = array_merge($params, $_GET);
-        dump($_FILES);
         foreach($_FILES as $name => $file)
         {
             $params[$name] = new File($file);

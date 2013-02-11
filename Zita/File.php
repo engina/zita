@@ -56,11 +56,33 @@ class File
         return $this->file['size'];
     }
 
+    /**
+     * Moves the file to the destination, if a file with same name already exist,
+     * this will will be renamed like myfile0001.jpg.
+     *
+     * This iterations continues until an available file name is found.
+     *
+     * Returns the final filename.
+     */
     public function moveTo($dst)
     {
+        $info = pathinfo($dst);
+        $path = $info['dirname'];
+        $file = $info['filename'];
+        $ext  = $info['extension'];
+
+        $i = 0;
+        while(file_exists($dst))
+        {
+            $f = sprintf("%s%04d.%s", $file, $i++, $ext);
+            $dst = Core::path($path, $f);
+        }
+
+        error_log('Moving '.$this->file['tmp_name'].' -> '.$dst);
         if(!move_uploaded_file($this->file['tmp_name'], $dst))
         {
-            throw new Exception('File could not be copied');
+            throw new \Exception('File could not be copied');
         }
+        return $dst;
     }
 }

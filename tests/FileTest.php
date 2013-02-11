@@ -35,5 +35,10 @@ class FileTest extends PHPUnit_Framework_TestCase
         // First .. is turned into _, then other characters.
         $this->assertEquals('__99pr_oblems.jpg', $f->getSafeName());
     }
+
+    public function testCopyDst()
+    {
+
+    }
 }
 
