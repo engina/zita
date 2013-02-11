@@ -11,7 +11,8 @@ abstract class AuthServiceBase extends Service
 
 	protected function addAuthenticator(IAuthenticator $auth, $name = null)
 	{
-        $className = basename(get_class($auth));
+        $tokens = explode('\\', get_class($auth));
+        $className = $tokens[count($tokens)-1];
         $suffix    = 'Authenticator';
         if(strlen($className) > strlen($suffix))
         {
