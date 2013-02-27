@@ -159,7 +159,7 @@ class Dispatcher
 			'Last-Modified' => gmdate('D, d M Y H:i:s').' GMT',
 			'Cache-Control' => 'no-cache, must-revalidate',
 		    'Pragma'        => 'no-cache',
-		    'Content-type'  => 'application/json',
+		    'Content-type'  => 'application/json; charset=utf-8',
 		    'Access-Control-Allow-Origin' => '*',
 		    'Access-Control-Allow-Headers' => 'origin, x-requested-with, content-type'
 		);

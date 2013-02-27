@@ -94,9 +94,9 @@ set_error_handler('errorHandler');
  * Utulity function to dump an object to error log
  * @param $mixed
  */
-function dump($mixed)
+function dump($mixed, $label = 'Dump')
 {
-	error_log(var_export($mixed, true));
+	error_log("[$label] ".var_export($mixed, true));
 }	
 
 ?>
