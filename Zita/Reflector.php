@@ -197,7 +197,7 @@ class Reflector
 
         foreach($methodParams as $p => $param)
         {
-            if(!isset($params[$param->name]))
+            if(!array_key_exists($param->name, $params))
             {
                 // This parameter is not in the provided $params, if it is not an optional parameter this is a fatal error
                 if(!$param->isOptional())
