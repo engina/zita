@@ -36,7 +36,7 @@ Getting Started
     ?>
 
 
-Now, see what happens when we acess this service.
+Now, see what happens when we access this service.
 
 Request:
 
@@ -358,9 +358,9 @@ There are three different yet simlar filter annotations. Each accept pipe (|) se
      * @Filter Foo|Bar
      */
      
-In this example, before service invokation FooFilter->preProcess and then BarFilter->preProcess methods will be invoked.
+In this example, before service invocation FooFilter->preProcess and then BarFilter->preProcess methods will be invoked.
 
-After service invokation is complete, first, FooFilter->postProcess then BarFilter->postProcess will be invoked.
+After service invocation is complete, first, FooFilter->postProcess then BarFilter->postProcess will be invoked.
 
 You can give any filter name you want. You can derive your own filters from IFilter, OutputFilter or InputFilter classes.
 
